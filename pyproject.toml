@@ -5,3 +5,8 @@ members = [
     "services/yt-bulk-dl",
     "services/edl-to-archive",
 ]
+
+[dependency-groups]
+dev = [
+    "superclaude>=4.3.0",
+]
