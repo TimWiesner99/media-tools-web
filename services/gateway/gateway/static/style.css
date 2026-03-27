@@ -1,0 +1,19 @@
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+article.coming-soon {
+  opacity: 0.55;
+}
+
+article header {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+footer small {
+  color: var(--pico-muted-color);
+}

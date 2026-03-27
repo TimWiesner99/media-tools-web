@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Media Tools — Home{% endblock %}
+
+{% block content %}
+<h1>Media Tools</h1>
+<p>A self-hosted collection of media utilities. Pick a tool to get started.</p>
+
+<div class="tool-grid">
+
+  <article>
+    <header>🟢 Spotify → MP3</header>
+    <p>Convert a Spotify playlist, album, or track into MP3 files with licensing metadata.</p>
+    <footer>
+      <a href="/green-to-red/" role="button">Open tool</a>
+    </footer>
+  </article>
+
+  <article class="coming-soon">
+    <header>📋 EDL to Archive</header>
+    <p>Combine EDL edit lists with source archive metadata into a definitive Excel report.</p>
+    <footer>
+      <button disabled>Coming soon</button>
+    </footer>
+  </article>
+
+  <article class="coming-soon">
+    <header>⬇ YT Bulk Download</header>
+    <p>Download multiple YouTube videos in bulk, with metadata CSV and codec normalisation.</p>
+    <footer>
+      <button disabled>Coming soon</button>
+    </footer>
+  </article>
+
+</div>
+{% endblock %}

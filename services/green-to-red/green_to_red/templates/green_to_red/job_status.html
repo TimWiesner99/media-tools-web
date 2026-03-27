@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if job.status == "done" %}Download ready{% elif job.status == "error" %}Failed{% else %}Converting…{% endif %} — Spotify → MP3
+{% endblock %}
+
+{% block content %}
+<h1>
+  {% if job.status == "done" %}Download ready
+  {% elif job.status == "error" %}Conversion failed
+  {% else %}Converting…
+  {% endif %}
+</h1>
+
+{% include "green_to_red/_status_fragment.html" %}
+{% endblock %}

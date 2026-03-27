@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Spotify → MP3{% endblock %}
+
+{% block content %}
+<h1>Spotify → MP3</h1>
+<p>
+  Enter a Spotify playlist, album, or track URL to download the audio as MP3 files,
+  along with a CSV of licensing metadata.
+</p>
+
+{% if error %}
+<article style="border-left: 4px solid var(--pico-del-color);">
+  <strong>Error:</strong> {{ error }}
+</article>
+{% endif %}
+
+<form method="post" action="convert">
+  <label for="spotify_url">
+    Spotify URL
+    <input
+      type="url"
+      id="spotify_url"
+      name="spotify_url"
+      placeholder="https://open.spotify.com/playlist/..."
+      required
+      autofocus
+    />
+  </label>
+
+  <label for="workers">
+    Download workers: <span id="workers_val">3</span>
+    <input
+      type="range"
+      id="workers"
+      name="workers"
+      min="1"
+      max="5"
+      value="3"
+      oninput="document.getElementById('workers_val').textContent = this.value"
+    />
+    <small>More workers = faster downloads, more CPU/bandwidth usage.</small>
+  </label>
+
+  <button type="submit">Start download</button>
+</form>
+{% endblock %}

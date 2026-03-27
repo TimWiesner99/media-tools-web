@@ -1,0 +1,40 @@
+<div id="status-panel"
+  {% if job.status not in ("done", "error") %}
+    hx-get="{{ fragment_url }}"
+    hx-trigger="every 3s"
+    hx-swap="outerHTML"
+  {% endif %}
+>
+  <progress value="{{ job.progress_pct }}" max="100"></progress>
+
+  {% if job.status == "done" %}
+  <article>
+    <p>
+      <strong>{{ job.result.downloaded_count }}</strong> of
+      <strong>{{ job.result.track_count }}</strong> tracks downloaded.
+      {% if job.result.not_found %}
+        <br/><small>{{ job.result.not_found | length }} track(s) not found on YouTube.</small>
+      {% endif %}
+    </p>
+    <a href="{{ download_url }}" role="button">⬇ Download ZIP</a>
+    &nbsp;
+    <a href="./" role="button" class="secondary">Convert another</a>
+  </article>
+
+  {% elif job.status == "error" %}
+  <article style="border-left: 4px solid var(--pico-del-color);">
+    <strong>Error:</strong> {{ job.error or "An unknown error occurred." }}
+    <br/><a href="./">Try again</a>
+  </article>
+
+  {% else %}
+  <p><small>Job ID: <code>{{ job.job_id }}</code></small></p>
+  {% endif %}
+
+  {% if job.messages %}
+  <details {% if job.status not in ("done", "error") %}open{% endif %}>
+    <summary>Progress log ({{ job.messages | length }} messages)</summary>
+    <pre style="max-height: 300px; overflow-y: auto; font-size: 0.8rem;">{{ job.messages | join('\n') }}</pre>
+  </details>
+  {% endif %}
+</div>
