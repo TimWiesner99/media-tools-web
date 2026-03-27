@@ -14,10 +14,10 @@
 >
 
 {% if job.status == "error" %}
-  <article class="error-banner">
+  <div class="error-banner">
     <strong>Download failed:</strong> {{ job.error or "An unknown error occurred." }}
     <br/><a href="/yt-bulk-dl/">Try again</a>
-  </article>
+  </div>
 {% endif %}
 
 <div class="pipeline-steps">
@@ -34,7 +34,7 @@
         {% set error_n = job.video_states | selectattr("status","equalto","error") | list | length %}
         <p class="step-detail">
           {{ done_n }} / {{ job.video_states | length }} downloaded
-          {%- if error_n %} · <span class="text-muted">{{ error_n }} failed</span>{% endif %}
+          {%- if error_n %} · {{ error_n }} failed{% endif %}
         </p>
         <table class="track-table">
           <thead>
@@ -48,7 +48,7 @@
             <tr>
               <td class="track-name-cell">
                 <span title="{{ vs.url }}">{{ vs.display | truncate(60, true, "…") }}</span>
-                {% if vs.channel %}<br><small class="text-muted">{{ vs.channel }}</small>{% endif %}
+                {% if vs.channel %}<br><small>{{ vs.channel }}</small>{% endif %}
               </td>
               <td class="track-status-cell dl-{{ vs.status }}">
                 {%- if vs.status == "done"        %}✓
@@ -73,11 +73,11 @@
     <strong>{{ job.done_count }}</strong> of
     <strong>{{ job.video_states | length }}</strong> videos downloaded.
     {% if job.error_count %}
-      <span class="text-muted">({{ job.error_count }} failed)</span>
+      ({{ job.error_count }} failed)
     {% endif %}
   </p>
-  <a href="{{ download_url }}" role="button">⬇ Download ZIP</a>
-  <a href="/yt-bulk-dl/" role="button" class="secondary outline">Download more</a>
+  <a href="{{ download_url }}" role="button">Download ZIP</a>
+  <a href="/yt-bulk-dl/" role="button" class="btn-secondary">Download more</a>
 </div>
 {% endif %}
 

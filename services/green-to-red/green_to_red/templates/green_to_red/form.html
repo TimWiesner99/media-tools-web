@@ -10,9 +10,9 @@
 </p>
 
 {% if error %}
-<article class="error-banner">
+<div class="error-banner">
   <strong>Error:</strong> {{ error }}
-</article>
+</div>
 {% endif %}
 
 <form method="post" action="convert">
@@ -27,6 +27,6 @@
       autofocus
     />
   </label>
-  <button type="submit">Start download</button>
+  <button type="submit" class="btn-action">Start download</button>
 </form>
 {% endblock %}

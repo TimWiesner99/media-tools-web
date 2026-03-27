@@ -10,41 +10,39 @@
 </p>
 
 {% if error %}
-<article class="error-banner">
+<div class="error-banner">
   <strong>Error:</strong> {{ error }}
-</article>
+</div>
 {% endif %}
 
 {% if success_stats %}
-<article style="border-left: 4px solid var(--pico-primary);">
+<div class="success-banner">
   <strong>Conversion complete.</strong>
   {{ success_stats.def_count }} entries in output
   ({{ success_stats.matched_count }} matched with source metadata
   {%- if success_stats.excluded_count %}, {{ success_stats.excluded_count }} excluded by rules{% endif %}
   {%- if success_stats.collapsed_count %}, {{ success_stats.collapsed_count }} collapsed{% endif %}).
-</article>
+</div>
 {% endif %}
 
 <form method="post" action="convert" enctype="multipart/form-data">
 
   {# ── File uploads ─────────────────────────────────────────────── #}
-  <div class="grid">
+  <div class="form-grid">
     <label>
-      EDL file <small>(.xlsx, .ods, .csv, .tsv)</small>
+      <span>EDL file <span class="tooltip-icon" data-tooltip="Export from AVID or Premiere Pro, then convert to .xlsx, .ods, .csv, or .tsv format.">?</span></span>
       <input type="file" name="edl_file"
              accept=".xlsx,.ods,.csv,.tsv,.txt" required />
-      <small>Export from AVID or Premiere Pro.</small>
     </label>
     <label>
-      Source file <small>(.xlsx, .ods, .csv, .tsv)</small>
+      <span>Source file <span class="tooltip-icon" data-tooltip="Archive list with clip metadata (.xlsx, .ods, .csv, or .tsv).">?</span></span>
       <input type="file" name="source_file"
              accept=".xlsx,.ods,.csv,.tsv,.txt" required />
-      <small>Archive list with clip metadata.</small>
     </label>
   </div>
 
   {# ── Options ──────────────────────────────────────────────────── #}
-  <div class="grid">
+  <div class="form-grid">
     <label>
       Frame rate
       <select name="fps">
@@ -55,54 +53,52 @@
         {% endfor %}
       </select>
     </label>
-    <div>
+    <div style="display:flex; flex-direction:column; gap:0.65rem; justify-content:flex-end;">
       <label>
         <input type="checkbox" name="collapse"
                {% if session.collapse %}checked{% endif %} />
         Collapse consecutive entries
-        <small>Merge continuous clips of the same source into one row.</small>
+        <span class="tooltip-icon" data-tooltip="Merge continuous clips of the same source into one row.">?</span>
       </label>
       <label>
         <input type="checkbox" name="include_frames"
                {% if session.include_frames %}checked{% endif %} />
         Include frame precision in timecodes
-        <small>Output HH:MM:SS:FF instead of HH:MM:SS.</small>
+        <span class="tooltip-icon" data-tooltip="Output HH:MM:SS:FF timecodes instead of HH:MM:SS.">?</span>
       </label>
     </div>
   </div>
 
   {# ── Exclusion rules ──────────────────────────────────────────── #}
   <label>
-    Exclusion rules
-    <small>One rule per line. Matching entries are removed before processing. Lines starting with <code>#</code> are comments.</small>
-    <textarea name="exclusion_rules" rows="8"
-              style="font-family: monospace; font-size: 0.85rem;"
+    <span>Exclusion rules <span class="tooltip-icon" data-tooltip="One rule per line. Matching entries are removed before processing. Lines starting with # are comments.">?</span></span>
+    <textarea name="exclusion_rules" rows="8" class="mono-textarea"
     >{{ session.exclusion_rules }}</textarea>
   </label>
 
   <details>
     <summary>Rule syntax</summary>
-    <article style="margin-top: 0.5rem;">
+    <div class="card" style="border-radius: 0 0 10px 10px; border-top: none; box-shadow: none;">
       <p><strong>Fields:</strong> <code>name</code>, <code>file_name</code> (or <code>Bestandsnaam</code>), <code>reel</code>, <code>track</code>, <code>comment</code></p>
       <p><strong>Operators:</strong> <code>IS</code> (exact match) · <code>INCLUDES</code> (substring)</p>
       <p><strong>Logic:</strong> <code>AND</code> · <code>OR</code> · <code>NOT</code> · <code>( )</code></p>
       <p>Lines are OR'd — any matching line excludes the entry.</p>
-      <pre style="font-size: 0.8rem; margin: 0;">file_name IS "" AND name INCLUDES ".MXF.SYNC"
+      <pre>file_name IS "" AND name INCLUDES ".MXF.SYNC"
 name INCLUDES "TEMP"
 (name INCLUDES "A0" OR name INCLUDES "B0") AND NOT comment INCLUDES "keep"</pre>
-    </article>
+    </div>
   </details>
 
-  <button type="submit">Convert → download DEF.xlsx</button>
+  <button type="submit" class="btn-action">Convert → download DEF.xlsx</button>
 </form>
 
 {# ── Template downloads ───────────────────────────────────────── #}
-<article style="margin-top: 2rem;">
+<article style="margin-top: 1.5rem;">
   <header>Blank templates</header>
   <p>Download pre-formatted Excel templates to fill in:</p>
   <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-    <a href="template/edl" role="button" class="secondary outline">⬇ EDL template</a>
-    <a href="template/source" role="button" class="secondary outline">⬇ Source template</a>
+    <a href="template/edl" role="button" class="btn-secondary">EDL template</a>
+    <a href="template/source" role="button" class="btn-secondary">Source template</a>
   </div>
 </article>
 {% endblock %}

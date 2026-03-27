@@ -10,9 +10,9 @@
 </p>
 
 {% if error %}
-<article class="error-banner">
+<div class="error-banner">
   <strong>Error:</strong> {{ error }}
-</article>
+</div>
 {% endif %}
 
 <form method="post" action="convert">
@@ -28,9 +28,9 @@
     >{{ urls_text or "" }}</textarea>
   </label>
 
-  <div class="grid">
+  <div class="form-grid">
     <label>
-      Filename prefix <small>(optional)</small>
+      <span>Filename prefix <span class="tooltip-icon" data-tooltip="Optional. Prepended to every output filename — e.g. prefix_title.mp4. Letters, numbers, underscores and hyphens only.">?</span></span>
       <input
         type="text"
         name="prefix"
@@ -39,10 +39,9 @@
         pattern="[\w\-]+"
         title="Letters, numbers, underscores and hyphens only"
       />
-      <small>Prepended to every filename: <code>prefix_title.mp4</code></small>
     </label>
     <label>
-      Max title length
+      <span>Max title length <span class="tooltip-icon" data-tooltip="Character limit for the title portion of the filename. Default is 40.">?</span></span>
       <input
         type="number"
         name="max_length"
@@ -50,10 +49,9 @@
         min="10"
         max="100"
       />
-      <small>Character limit for the title portion of the filename.</small>
     </label>
   </div>
 
-  <button type="submit">Start download</button>
+  <button type="submit" class="btn-action">Start download</button>
 </form>
 {% endblock %}

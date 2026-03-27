@@ -19,10 +19,10 @@
 >
 
 {% if job.status == "error" %}
-  <article class="error-banner">
+  <div class="error-banner">
     <strong>Conversion failed:</strong> {{ job.error or "An unknown error occurred." }}
     <br/><a href="/green-to-red/">Try again</a>
-  </article>
+  </div>
 {% endif %}
 
 <div class="pipeline-steps">
@@ -115,11 +115,11 @@
     <strong>{{ job.result.downloaded_count }}</strong> of
     <strong>{{ job.result.track_count }}</strong> tracks downloaded.
     {% if not_found_n %}
-      <span class="text-muted">({{ not_found_n }} not found on YouTube)</span>
+      ({{ not_found_n }} not found on YouTube)
     {% endif %}
   </p>
-  <a href="{{ download_url }}" role="button">⬇ Download ZIP</a>
-  <a href="/green-to-red/" role="button" class="secondary outline">Convert another</a>
+  <a href="{{ download_url }}" role="button">Download ZIP</a>
+  <a href="/green-to-red/" role="button" class="btn-secondary">Convert another</a>
 </div>
 {% endif %}
 

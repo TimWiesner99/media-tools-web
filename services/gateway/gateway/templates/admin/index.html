@@ -4,37 +4,35 @@
 
 {% block content %}
 <h1>Admin Panel</h1>
-<p><small>Settings are stored in memory and reset on server restart. A persistent config store will be added in a later phase.</small></p>
+<p>Settings are stored in memory and reset on server restart.</p>
 
 {# ── Spotify → MP3 settings ────────────────────────────────────── #}
 <article>
   <header>Spotify → MP3 — Download settings</header>
 
   {% if saved == "green_to_red" %}
-  <p style="color: var(--pico-primary);">✓ Settings saved.</p>
+  <p class="text-success">✓ Settings saved.</p>
   {% endif %}
 
   <form method="post" action="/admin/settings/green-to-red">
-    <div class="grid">
+    <div class="form-grid">
       <label>
-        Max workers per session
+        <span>Max workers per session <span class="tooltip-icon" data-tooltip="Concurrent yt-dlp downloads for a single user's conversion job.">?</span></span>
         <input
           type="number"
           name="max_workers_per_job"
           value="{{ settings.green_to_red.max_workers_per_job }}"
           min="1" max="20"
         />
-        <small>Concurrent yt-dlp downloads for a single user's conversion job.</small>
       </label>
       <label>
-        Max workers globally
+        <span>Max workers globally <span class="tooltip-icon" data-tooltip="Total concurrent downloads across all active sessions. Enforced via a global semaphore.">?</span></span>
         <input
           type="number"
           name="max_workers_global"
           value="{{ settings.green_to_red.max_workers_global }}"
           min="1" max="100"
         />
-        <small>Total concurrent downloads across all active sessions. Enforced via a global semaphore.</small>
       </label>
     </div>
     <button type="submit">Save</button>
@@ -46,30 +44,28 @@
   <header>YT Bulk Download — Download settings</header>
 
   {% if saved == "yt_bulk_dl" %}
-  <p style="color: var(--pico-primary);">✓ Settings saved.</p>
+  <p class="text-success">✓ Settings saved.</p>
   {% endif %}
 
   <form method="post" action="/admin/settings/yt-bulk-dl">
-    <div class="grid">
+    <div class="form-grid">
       <label>
-        Max workers per session
+        <span>Max workers per session <span class="tooltip-icon" data-tooltip="Concurrent video downloads for a single user's job.">?</span></span>
         <input
           type="number"
           name="max_workers_per_job"
           value="{{ settings.yt_bulk_dl.max_workers_per_job }}"
           min="1" max="20"
         />
-        <small>Concurrent video downloads for a single user's job.</small>
       </label>
       <label>
-        Max workers globally
+        <span>Max workers globally <span class="tooltip-icon" data-tooltip="Total concurrent downloads across all active sessions.">?</span></span>
         <input
           type="number"
           name="max_workers_global"
           value="{{ settings.yt_bulk_dl.max_workers_global }}"
           min="1" max="100"
         />
-        <small>Total concurrent downloads across all active sessions.</small>
       </label>
     </div>
     <button type="submit">Save</button>
@@ -77,7 +73,7 @@
 </article>
 
 {# ── EDL to Archive — no server-side settings needed ──────────── #}
-<article style="opacity: 0.5;">
+<article class="muted-article">
   <header>EDL to Archive — no server settings</header>
 </article>
 {% endblock %}
