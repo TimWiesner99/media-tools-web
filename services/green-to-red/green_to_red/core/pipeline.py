@@ -1,12 +1,16 @@
 """
 green-to-red pipeline — web-adapted version of green_to_red.py.
 
-Changes from the original CLI script:
-- print()   -> progress_callback(msg)
-- sys.exit() -> raise PipelineError(msg)
-- Hardcoded ~/Downloads/... -> caller-supplied job_dir
-- load_converter() / load_downloader() -> direct imports
-- main() / argparse removed; replaced with run_pipeline()
+Progress reporting uses structured dict events (not strings):
+  {"type": "phase",        "phase": "spotify"|"tracks"|"done"}
+  {"type": "spotify_done", "content_name": str, "track_count": int}
+  {"type": "tracks_init",  "names": [str, ...]}
+  {"type": "yt_result",    "name": str, "found": bool}
+  {"type": "dl_start",     "name": str}
+  {"type": "dl_done",      "name": str, "success": bool}
+  {"type": "mb_start"}                          ← MusicBrainz lookup started (runs parallel to downloads)
+  {"type": "mb_done"}                           ← CSV ready
+  {"type": "note",         "msg": str}          ← internal progress, ignored by UI
 """
 
 import csv
@@ -50,12 +54,22 @@ class PipelineResult:
     mp3_dir: Path
 
 
+def _note(cb: Callable[[dict], None], msg: str) -> None:
+    cb({"type": "note", "msg": msg})
+
+
 def _truncate_path_component(name, max_bytes=MAX_FILENAME_BYTES):
     if len(name.encode("utf-8")) <= max_bytes:
         return name
     while len(name.encode("utf-8")) > max_bytes:
         name = name[:-1]
     return name.rstrip()
+
+
+def _track_display_name(track: dict) -> str:
+    t = track["track"]
+    artist = t["artists"][0]["name"] if t["artists"] else "Unknown"
+    return f"{artist} - {t['name']}"
 
 
 def detect_spotify_type(url):
@@ -86,30 +100,25 @@ def _normalize_track(track_data):
     }
 
 
-def fetch_spotify_content(client, url, url_type, progress_callback):
+def fetch_spotify_content(client, url, url_type, cb):
     if url_type == "track":
-        progress_callback("Fetching track from Spotify...")
+        _note(cb, "Fetching track from Spotify...")
         track_data = client.get_track_info(url)
         name = track_data["name"]
         artists = track_data.get("artists", [])
         artist_str = artists[0]["name"] if artists else "Unknown"
         display_name = f"{artist_str} - {name}"
-        progress_callback(f"Track: {name} — {artist_str}")
         return [_normalize_track(track_data)], display_name
 
     elif url_type == "album":
-        progress_callback("Fetching album from Spotify...")
+        _note(cb, "Fetching album from Spotify...")
         album = client.get_album_info(url)
         album_name = album["name"]
         album_artists = album.get("artists", [])
         total_tracks = album.get("total_tracks", len(album.get("tracks", [])))
-        artist_str = ", ".join(a["name"] for a in album_artists)
-        progress_callback(f"Album: {album_name} — {artist_str} ({total_tracks} tracks)")
-
         raw_tracks = album.get("tracks", [])
         if total_tracks > len(raw_tracks):
-            progress_callback(f"Note: Only {len(raw_tracks)} of {total_tracks} tracks available via scraping.")
-
+            _note(cb, f"Note: Only {len(raw_tracks)} of {total_tracks} tracks available via scraping.")
         tracks = []
         for t in raw_tracks:
             if not t.get("artists"):
@@ -118,25 +127,22 @@ def fetch_spotify_content(client, url, url_type, progress_callback):
         return tracks, album_name
 
     else:  # playlist
-        progress_callback("Fetching playlist from Spotify...")
+        _note(cb, "Fetching playlist from Spotify...")
         playlist = client.get_playlist_info(url)
         playlist_name = playlist["name"]
         total_tracks = playlist.get("track_count", len(playlist["tracks"]))
-        progress_callback(f"Playlist: {playlist_name} ({total_tracks} tracks)")
-
         if total_tracks > len(playlist["tracks"]):
-            progress_callback(f"Note: Only the first {len(playlist['tracks'])} tracks are available via scraping.")
-
+            _note(cb, f"Note: Only the first {len(playlist['tracks'])} tracks are available via scraping.")
         tracks = [_normalize_track(t) for t in playlist["tracks"]]
         return tracks, playlist_name
 
 
-def _lookup_artist_formats(tracks, progress_callback):
+def _lookup_artist_formats(tracks, str_cb):
     unique_names = sorted(
         {a["name"] for t in tracks if t.get("track") for a in t["track"]["artists"]}
     )
     cache = {}
-    progress_callback(f"MusicBrainz: looking up {len(unique_names)} artists...")
+    str_cb(f"Looking up {len(unique_names)} artists on MusicBrainz...")
     for name in unique_names:
         try:
             result = musicbrainzngs.search_artists(artist=name, limit=1)
@@ -151,7 +157,7 @@ def _lookup_artist_formats(tracks, progress_callback):
     return cache
 
 
-def _lookup_track_metadata(tracks, progress_callback):
+def _lookup_track_metadata(tracks, str_cb):
     unique_tracks = []
     seen = set()
     for t in tracks:
@@ -165,7 +171,7 @@ def _lookup_track_metadata(tracks, progress_callback):
             seen.add(key)
 
     n = len(unique_tracks)
-    progress_callback(f"MusicBrainz: looking up metadata for {n} tracks (~{n * 3}s)...")
+    str_cb(f"Looking up metadata for {n} tracks on MusicBrainz (~{n * 3}s)...")
 
     cache = {}
     release_ids = {}
@@ -175,15 +181,12 @@ def _lookup_track_metadata(tracks, progress_callback):
         try:
             result = musicbrainzngs.search_recordings(recording=title, artist=artist, limit=1)
             time.sleep(1)
-
             rec_list = result.get("recording-list", [])
             if not rec_list:
                 cache[(artist, title)] = entry
                 continue
-
             rec = rec_list[0]
             rec_id = rec["id"]
-
             releases = rec.get("release-list", [])
             if releases:
                 release = releases[0]
@@ -192,15 +195,12 @@ def _lookup_track_metadata(tracks, progress_callback):
                 release_id = release.get("id", "")
                 if release_id:
                     release_ids.setdefault(release_id, set()).add((artist, title))
-
             rec_detail = musicbrainzngs.get_recording_by_id(rec_id, includes=["work-rels", "isrcs"])
             time.sleep(1)
-
             recording = rec_detail.get("recording", {})
             isrc_list = recording.get("isrc-list", [])
             if isrc_list:
                 entry["isrc"] = isrc_list[0]
-
             work_rels = recording.get("work-relation-list", [])
             perf = [r for r in work_rels if r.get("type") == "performance"]
             if perf:
@@ -212,14 +212,12 @@ def _lookup_track_metadata(tracks, progress_callback):
                         entry["composers"].append(rel["artist"].get("sort-name", rel["artist"]["name"]))
         except Exception:
             pass
-
         cache[(artist, title)] = entry
-
         if (i + 1) % 10 == 0:
-            progress_callback(f"  MusicBrainz: {i + 1}/{n} tracks done")
+            str_cb(f"MusicBrainz: {i + 1}/{n} tracks done")
 
     if release_ids:
-        progress_callback(f"MusicBrainz: fetching labels for {len(release_ids)} albums...")
+        str_cb(f"Fetching labels for {len(release_ids)} albums...")
         for release_id in release_ids:
             try:
                 rel = musicbrainzngs.get_release_by_id(release_id, includes=["labels"])
@@ -236,17 +234,16 @@ def _lookup_track_metadata(tracks, progress_callback):
     return cache
 
 
-def generate_song_info(tracks, video_ids, content_name, output_dir, progress_callback):
-    progress_callback("Generating song information CSV...")
+def generate_song_info(tracks, video_ids, content_name, output_dir, cb):
+    note_cb = lambda msg: _note(cb, msg)  # noqa: E731
+    cb({"type": "mb_start"})
 
     artist_fmt = {}
     metadata_map = {}
     if HAS_MUSICBRAINZ:
         musicbrainzngs.set_useragent(*MUSICBRAINZ_USERAGENT)
-        artist_fmt = _lookup_artist_formats(tracks, progress_callback)
-        metadata_map = _lookup_track_metadata(tracks, progress_callback)
-    else:
-        progress_callback("musicbrainzngs not installed — skipping metadata lookups.")
+        artist_fmt = _lookup_artist_formats(tracks, note_cb)
+        metadata_map = _lookup_track_metadata(tracks, note_cb)
 
     fieldnames = [
         "Title", "Artist", "Composer", "Composer 2", "Label",
@@ -292,11 +289,12 @@ def generate_song_info(tracks, video_ids, content_name, output_dir, progress_cal
         writer.writerows(rows)
 
     with_composers = sum(1 for r in rows if r["Composer"])
-    progress_callback(f"CSV saved: {len(rows)} tracks, {with_composers} with composer data.")
+    note_cb(f"CSV saved: {len(rows)} tracks, {with_composers} with composer data.")
+    cb({"type": "mb_done"})
     return csv_path
 
 
-def rename_downloaded_files(tracks, video_ids, download_results, output_dir, progress_callback):
+def rename_downloaded_files(tracks, video_ids, download_results, output_dir):
     from yt_dlp.utils import sanitize_filename
 
     url_to_track = {}
@@ -309,8 +307,6 @@ def rename_downloaded_files(tracks, video_ids, download_results, output_dir, pro
         url = f"https://www.youtube.com/watch?v={video_id}"
         url_to_track[url] = (artist, title)
 
-    renamed = 0
-    skipped = 0
     for result in download_results:
         if not result.get("success") or not result.get("title"):
             continue
@@ -321,45 +317,38 @@ def rename_downloaded_files(tracks, video_ids, download_results, output_dir, pro
         old_name = sanitize_filename(result["title"], restricted=False) + ".mp3"
         base = sanitize_filename(f"{artist} - {title}", restricted=False)
         new_name = _truncate_path_component(base) + ".mp3"
-
         if old_name == new_name:
             continue
-
         old_path = Path(output_dir) / old_name
         new_path = Path(output_dir) / new_name
-
-        if old_path.exists():
-            if new_path.exists():
-                skipped += 1
-                continue
+        if old_path.exists() and not new_path.exists():
             old_path.rename(new_path)
-            renamed += 1
-        else:
-            skipped += 1
-
-    progress_callback(f"Renamed {renamed} file(s) to 'Artist - Title' format.")
 
 
 def run_pipeline(
     spotify_url: str,
     job_dir: Path,
-    progress_callback: Callable[[str], None],
-    workers: int = 3,
+    progress_callback: Callable[[dict], None],
+    workers: int = 5,
+    global_semaphore=None,
 ) -> PipelineResult:
     """
-    Run the full green-to-red pipeline for a web request.
-
+    Run the full green-to-red pipeline.
+    progress_callback receives structured dict events (see module docstring).
     Raises PipelineError on fatal errors.
-    Returns a PipelineResult with paths to output files.
     """
     from spotify_scraper import SpotifyClient
     from yt_dlp.utils import sanitize_filename
 
-    # Detect URL type and fetch Spotify tracks
-    url_type = detect_spotify_type(spotify_url)
+    cb = progress_callback
+    note = lambda msg: cb({"type": "note", "msg": msg})  # noqa: E731
+
+    # ── 1. Spotify ──────────────────────────────────────────────────────────
+    cb({"type": "phase", "phase": "spotify"})
     client = SpotifyClient(log_level="WARNING")
     try:
-        tracks, content_name = fetch_spotify_content(client, spotify_url, url_type, progress_callback)
+        url_type = detect_spotify_type(spotify_url)
+        tracks, content_name = fetch_spotify_content(client, spotify_url, url_type, cb)
     finally:
         client.close()
 
@@ -369,23 +358,30 @@ def run_pipeline(
     if not tracks:
         raise PipelineError("No tracks found for this Spotify URL.")
 
-    progress_callback(f"Searching YouTube for {len(tracks)} tracks...")
+    cb({"type": "spotify_done", "content_name": content_name, "track_count": len(tracks)})
+
+    # ── 2. YouTube search + Download + Metadata (all in "tracks" phase) ────
+    cb({"type": "phase", "phase": "tracks"})
+
+    display_names = [_track_display_name(t) for t in tracks]
+    cb({"type": "tracks_init", "names": display_names})
+
     with ThreadPoolExecutor() as executor:
         video_ids = list(executor.map(get_youtube_link, tracks))
 
     youtube_urls = []
-    not_found = []
-    for track, video_id in zip(tracks, video_ids):
-        track_name = track["track"]["name"]
-        artists = ", ".join(a["name"] for a in track["track"]["artists"])
-        if video_id:
-            youtube_urls.append(f"https://www.youtube.com/watch?v={video_id}")
-            progress_callback(f"[+] {track_name} — {artists}")
-        else:
-            not_found.append(f"{track_name} — {artists}")
-            progress_callback(f"[-] Not found: {track_name} — {artists}")
+    url_to_name: dict[str, str] = {}
+    not_found: list[str] = []
 
-    progress_callback(f"Found {len(youtube_urls)} of {len(tracks)} tracks on YouTube.")
+    for track, video_id, dname in zip(tracks, video_ids, display_names):
+        if video_id:
+            url = f"https://www.youtube.com/watch?v={video_id}"
+            youtube_urls.append(url)
+            url_to_name[url] = dname
+            cb({"type": "yt_result", "name": dname, "found": True})
+        else:
+            not_found.append(dname)
+            cb({"type": "yt_result", "name": dname, "found": False})
 
     if not youtube_urls:
         raise PipelineError("None of the tracks could be found on YouTube.")
@@ -394,8 +390,6 @@ def run_pipeline(
     mp3_dir.mkdir(parents=True, exist_ok=True)
     workers = max(1, min(5, workers))
 
-    progress_callback(f"Downloading {len(youtube_urls)} track(s) as MP3 ({workers} workers)...")
-
     with ThreadPoolExecutor(max_workers=2) as executor:
         dl_future = executor.submit(
             download_youtube_content,
@@ -403,7 +397,10 @@ def run_pipeline(
             output_path=str(mp3_dir),
             audio_only=True,
             max_workers=workers,
-            progress_fn=progress_callback,
+            on_track_start=lambda name: cb({"type": "dl_start", "name": name}),
+            on_track_done=lambda name, ok: cb({"type": "dl_done", "name": name, "success": ok}),
+            url_to_name=url_to_name,
+            global_semaphore=global_semaphore,
         )
         csv_future = executor.submit(
             generate_song_info,
@@ -411,16 +408,14 @@ def run_pipeline(
             video_ids,
             content_name,
             str(mp3_dir),
-            progress_callback,
+            cb,
         )
         download_results = dl_future.result()
         csv_path = csv_future.result()
 
-    progress_callback("Renaming files to 'Artist - Title' format...")
-    rename_downloaded_files(tracks, video_ids, download_results or [], mp3_dir, progress_callback)
+    rename_downloaded_files(tracks, video_ids, download_results or [], mp3_dir)
 
     downloaded_count = sum(1 for r in (download_results or []) if r.get("success"))
-    progress_callback(f"Done! {downloaded_count} MP3(s) ready.")
 
     return PipelineResult(
         content_name=content_name,

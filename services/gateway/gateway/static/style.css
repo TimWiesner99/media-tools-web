@@ -17,3 +17,146 @@ article header {
 footer small {
   color: var(--pico-muted-color);
 }
+
+/* ── Pipeline flowchart ──────────────────────────────────────────── */
+.pipeline-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 1.5rem 0;
+}
+
+.pipeline-step {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-left: 2px solid var(--pico-muted-border-color);
+  padding-left: 1rem;
+  margin-left: 0.75rem;
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+
+.pipeline-step.done,
+.pipeline-step.active {
+  opacity: 1;
+}
+
+.pipeline-step:last-child {
+  border-left-color: transparent;
+}
+
+.step-marker {
+  flex: 0 0 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: 2px solid var(--pico-muted-border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  margin-left: -1.85rem;
+  background: var(--pico-background-color);
+  color: var(--pico-muted-color);
+}
+
+.pipeline-step.done .step-marker {
+  border-color: var(--pico-primary);
+  color: var(--pico-primary);
+}
+
+.pipeline-step.active .step-marker {
+  border-color: var(--pico-primary);
+  color: var(--pico-primary);
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.step-body h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.step-detail {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--pico-muted-color);
+}
+
+/* ── Track table (Find & download step) ─────────────────────────── */
+.track-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-top: 0.5rem;
+  table-layout: fixed;
+}
+
+.track-table th {
+  text-align: left;
+  font-weight: 600;
+  padding: 0.2rem 0.4rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  color: var(--pico-muted-color);
+  font-size: 0.75rem;
+}
+
+.track-table th:nth-child(2),
+.track-table th:nth-child(3) {
+  width: 2.5rem;
+  text-align: center;
+}
+
+.track-table td {
+  padding: 0.2rem 0.4rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--pico-muted-border-color) 50%, transparent);
+}
+
+.track-table tr:last-child td {
+  border-bottom: none;
+}
+
+.track-name-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-status-cell {
+  text-align: center;
+  color: var(--pico-muted-color);
+  font-size: 0.9rem;
+}
+
+.yt-found    { color: var(--pico-primary); }
+.yt-not_found { color: var(--pico-del-color, #c62828); }
+.dl-done     { color: var(--pico-primary); }
+.dl-error    { color: var(--pico-del-color, #c62828); }
+.dl-downloading { color: var(--pico-primary); }
+
+/* ── Done panel ───────────────────────────────────────────────────── */
+.done-panel {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--pico-primary);
+  border-radius: var(--pico-border-radius);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.done-panel p {
+  margin: 0;
+  flex: 1;
+}
+
+/* ── Error banner ────────────────────────────────────────────────── */
+article.error-banner {
+  border-left: 4px solid var(--pico-del-color, #c62828);
+  background: color-mix(in srgb, var(--pico-del-color, #c62828) 8%, transparent);
+}

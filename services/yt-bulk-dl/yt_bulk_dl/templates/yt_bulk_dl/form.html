@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}YT Bulk Download{% endblock %}
+
+{% block content %}
+<h1>YouTube Bulk Download</h1>
+<p>
+  Enter YouTube URLs to download as MP4 (H.264 + AAC). One URL per line.
+  Lines starting with <code>#</code> are treated as comments.
+</p>
+
+{% if error %}
+<article class="error-banner">
+  <strong>Error:</strong> {{ error }}
+</article>
+{% endif %}
+
+<form method="post" action="convert">
+  <label for="urls_text">
+    YouTube URLs
+    <textarea
+      id="urls_text"
+      name="urls_text"
+      rows="10"
+      placeholder="https://www.youtube.com/watch?v=…&#10;# optional comment&#10;https://www.youtube.com/watch?v=…"
+      required
+      autofocus
+    >{{ urls_text or "" }}</textarea>
+  </label>
+
+  <div class="grid">
+    <label>
+      Filename prefix <small>(optional)</small>
+      <input
+        type="text"
+        name="prefix"
+        value="{{ prefix or '' }}"
+        placeholder="e.g. DL_monday"
+        pattern="[\w\-]+"
+        title="Letters, numbers, underscores and hyphens only"
+      />
+      <small>Prepended to every filename: <code>prefix_title.mp4</code></small>
+    </label>
+    <label>
+      Max title length
+      <input
+        type="number"
+        name="max_length"
+        value="{{ max_length or 40 }}"
+        min="10"
+        max="100"
+      />
+      <small>Character limit for the title portion of the filename.</small>
+    </label>
+  </div>
+
+  <button type="submit">Start download</button>
+</form>
+{% endblock %}

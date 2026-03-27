@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if job.status == "done" %}Download ready
+  {% elif job.status == "error" %}Download failed
+  {% else %}Downloading…
+  {% endif %} — YT Bulk Download
+{% endblock %}
+
+{% block content %}
+<h1>
+  {% if job.status == "done" %}Download ready
+  {% elif job.status == "error" %}Download failed
+  {% else %}Downloading…
+  {% endif %}
+</h1>
+
+{% include "yt_bulk_dl/_status_fragment.html" %}
+{% endblock %}

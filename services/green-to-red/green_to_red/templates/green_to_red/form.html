@@ -10,7 +10,7 @@
 </p>
 
 {% if error %}
-<article style="border-left: 4px solid var(--pico-del-color);">
+<article class="error-banner">
   <strong>Error:</strong> {{ error }}
 </article>
 {% endif %}
@@ -22,26 +22,11 @@
       type="url"
       id="spotify_url"
       name="spotify_url"
-      placeholder="https://open.spotify.com/playlist/..."
+      placeholder="https://open.spotify.com/playlist/…"
       required
       autofocus
     />
   </label>
-
-  <label for="workers">
-    Download workers: <span id="workers_val">3</span>
-    <input
-      type="range"
-      id="workers"
-      name="workers"
-      min="1"
-      max="5"
-      value="3"
-      oninput="document.getElementById('workers_val').textContent = this.value"
-    />
-    <small>More workers = faster downloads, more CPU/bandwidth usage.</small>
-  </label>
-
   <button type="submit">Start download</button>
 </form>
 {% endblock %}

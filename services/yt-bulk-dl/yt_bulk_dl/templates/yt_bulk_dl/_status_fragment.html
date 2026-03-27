@@ -1,0 +1,84 @@
+{#
+  Step visual state — one step, always rendered (greyed when pending).
+  Phase: pending → download → done/error
+#}
+{% set s_download = "done"   if job.phase == "done"
+                    else ("active" if job.phase == "download" else "pending") %}
+
+<div id="status-panel"
+  {% if job.status not in ("done","error") %}
+    hx-get="{{ fragment_url }}"
+    hx-trigger="every 3s"
+    hx-swap="outerHTML"
+  {% endif %}
+>
+
+{% if job.status == "error" %}
+  <article class="error-banner">
+    <strong>Download failed:</strong> {{ job.error or "An unknown error occurred." }}
+    <br/><a href="/yt-bulk-dl/">Try again</a>
+  </article>
+{% endif %}
+
+<div class="pipeline-steps">
+
+  {# ── Step 1: Download videos ──────────────────────────────────── #}
+  <div class="pipeline-step {{ s_download }}">
+    <div class="step-marker">
+      {% if s_download == "done" %}✓{% elif s_download == "active" %}⟳{% else %}○{% endif %}
+    </div>
+    <div class="step-body">
+      <h4>Download videos</h4>
+      {% if job.video_states %}
+        {% set done_n  = job.video_states | selectattr("status","equalto","done")  | list | length %}
+        {% set error_n = job.video_states | selectattr("status","equalto","error") | list | length %}
+        <p class="step-detail">
+          {{ done_n }} / {{ job.video_states | length }} downloaded
+          {%- if error_n %} · <span class="text-muted">{{ error_n }} failed</span>{% endif %}
+        </p>
+        <table class="track-table">
+          <thead>
+            <tr>
+              <th>Video</th>
+              <th title="Status">DL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for vs in job.video_states %}
+            <tr>
+              <td class="track-name-cell">
+                <span title="{{ vs.url }}">{{ vs.display | truncate(60, true, "…") }}</span>
+                {% if vs.channel %}<br><small class="text-muted">{{ vs.channel }}</small>{% endif %}
+              </td>
+              <td class="track-status-cell dl-{{ vs.status }}">
+                {%- if vs.status == "done"        %}✓
+                {%- elif vs.status == "error"      %}✗
+                {%- elif vs.status == "downloading"%}⟳
+                {%- else                           %}—{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  </div>
+
+</div>{# end .pipeline-steps #}
+
+{# ── Done / Download button ───────────────────────────────────────── #}
+{% if job.status == "done" %}
+<div class="done-panel">
+  <p>
+    <strong>{{ job.done_count }}</strong> of
+    <strong>{{ job.video_states | length }}</strong> videos downloaded.
+    {% if job.error_count %}
+      <span class="text-muted">({{ job.error_count }} failed)</span>
+    {% endif %}
+  </p>
+  <a href="{{ download_url }}" role="button">⬇ Download ZIP</a>
+  <a href="/yt-bulk-dl/" role="button" class="secondary outline">Download more</a>
+</div>
+{% endif %}
+
+</div>{# end #status-panel #}

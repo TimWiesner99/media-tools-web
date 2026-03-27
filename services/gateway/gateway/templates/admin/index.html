@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Admin — Media Tools{% endblock %}
+
+{% block content %}
+<h1>Admin Panel</h1>
+<p><small>Settings are stored in memory and reset on server restart. A persistent config store will be added in a later phase.</small></p>
+
+{# ── Spotify → MP3 settings ────────────────────────────────────── #}
+<article>
+  <header>Spotify → MP3 — Download settings</header>
+
+  {% if saved == "green_to_red" %}
+  <p style="color: var(--pico-primary);">✓ Settings saved.</p>
+  {% endif %}
+
+  <form method="post" action="/admin/settings/green-to-red">
+    <div class="grid">
+      <label>
+        Max workers per session
+        <input
+          type="number"
+          name="max_workers_per_job"
+          value="{{ settings.green_to_red.max_workers_per_job }}"
+          min="1" max="20"
+        />
+        <small>Concurrent yt-dlp downloads for a single user's conversion job.</small>
+      </label>
+      <label>
+        Max workers globally
+        <input
+          type="number"
+          name="max_workers_global"
+          value="{{ settings.green_to_red.max_workers_global }}"
+          min="1" max="100"
+        />
+        <small>Total concurrent downloads across all active sessions. Enforced via a global semaphore.</small>
+      </label>
+    </div>
+    <button type="submit">Save</button>
+  </form>
+</article>
+
+{# ── YT Bulk Download settings ──────────────────────────────────── #}
+<article>
+  <header>YT Bulk Download — Download settings</header>
+
+  {% if saved == "yt_bulk_dl" %}
+  <p style="color: var(--pico-primary);">✓ Settings saved.</p>
+  {% endif %}
+
+  <form method="post" action="/admin/settings/yt-bulk-dl">
+    <div class="grid">
+      <label>
+        Max workers per session
+        <input
+          type="number"
+          name="max_workers_per_job"
+          value="{{ settings.yt_bulk_dl.max_workers_per_job }}"
+          min="1" max="20"
+        />
+        <small>Concurrent video downloads for a single user's job.</small>
+      </label>
+      <label>
+        Max workers globally
+        <input
+          type="number"
+          name="max_workers_global"
+          value="{{ settings.yt_bulk_dl.max_workers_global }}"
+          min="1" max="100"
+        />
+        <small>Total concurrent downloads across all active sessions.</small>
+      </label>
+    </div>
+    <button type="submit">Save</button>
+  </form>
+</article>
+
+{# ── EDL to Archive — no server-side settings needed ──────────── #}
+<article style="opacity: 0.5;">
+  <header>EDL to Archive — no server settings</header>
+</article>
+{% endblock %}

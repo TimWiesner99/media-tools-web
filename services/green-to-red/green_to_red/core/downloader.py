@@ -1,23 +1,23 @@
 """YouTube downloader — adapted from Download-Simply-Videos-From-YouTube/download.py.
 
-Changes from original:
-- Removed interactive __main__ block
-- download_youtube_content accepts an optional progress_fn for web progress reporting
-- Removed sys import (not needed without __main__)
+Web-specific changes:
+- on_track_start / on_track_done callbacks for per-track UI updates
+- global_semaphore: a threading.Semaphore acquired per download to enforce
+  the server-wide concurrent download cap
+- Quiet yt-dlp output (logs go to server stdout, not shown to the user)
 """
 
-from yt_dlp import YoutubeDL
 import os
-import re
 import time
-from typing import Optional, List, Callable
-from urllib.parse import urlparse, parse_qs
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
+from typing import Callable, List, Optional
+from urllib.parse import parse_qs, urlparse
+
+from yt_dlp import YoutubeDL
 
 MAX_RETRIES = 3
 RETRY_DELAY = 2
-MAX_CONCURRENT_WORKERS = 5
 DEFAULT_CONCURRENT_WORKERS = 3
 
 
@@ -32,34 +32,29 @@ def get_url_info(url: str):
             "playlist_items": "1",
         }
         with YoutubeDL(ydl_opts) as ydl:
-            video_info = ydl.extract_info(url, download=False)
-            if video_info is None:
-                parsed_url = urlparse(url)
-                query_params = parse_qs(parsed_url.query)
-                if "/@" in url or "/channel/" in url or "/c/" in url or "/user/" in url:
+            info = ydl.extract_info(url, download=False)
+            if info is None:
+                parsed = urlparse(url)
+                qp = parse_qs(parsed.query)
+                if any(x in url for x in ("/@", "/channel/", "/c/", "/user/")):
                     return "channel", {}
-                elif "list" in query_params:
+                elif "list" in qp:
                     return "playlist", {}
-                else:
-                    return "video", {}
-            content_type = video_info.get("_type", "video")
-            if content_type == "playlist":
-                if video_info.get("uploader_id") and (
-                    "/@" in url or "/channel/" in url or "/c/" in url or "/user/" in url
-                ):
-                    return "channel", video_info
-                else:
-                    return "playlist", video_info
-            return content_type, video_info
+                return "video", {}
+            ct = info.get("_type", "video")
+            if ct == "playlist" and info.get("uploader_id") and any(
+                x in url for x in ("/@", "/channel/", "/c/", "/user/")
+            ):
+                return "channel", info
+            return ct, info
     except Exception:
-        parsed_url = urlparse(url)
-        query_params = parse_qs(parsed_url.query)
-        if "/@" in url or "/channel/" in url or "/c/" in url or "/user/" in url:
+        parsed = urlparse(url)
+        qp = parse_qs(parsed.query)
+        if any(x in url for x in ("/@", "/channel/", "/c/", "/user/")):
             return "channel", {}
-        elif "list" in query_params:
+        elif "list" in qp:
             return "playlist", {}
-        else:
-            return "video", {}
+        return "video", {}
 
 
 def download_single_video(
@@ -67,25 +62,25 @@ def download_single_video(
     output_path: str,
     thread_id: int = 0,
     audio_only: bool = False,
-    progress_fn: Callable[[str], None] = print,
+    track_name: str | None = None,
+    on_start: Callable[[str], None] | None = None,
+    on_done: Callable[[str, bool], None] | None = None,
+    global_semaphore=None,
 ) -> dict:
-    if audio_only:
-        format_selector = "bestaudio/best"
-        postprocessors = [
-            {
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "192",
-            }
-        ]
-    else:
-        format_selector = "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best"
-        postprocessors = [{"key": "FFmpegVideoConvertor", "preferedformat": "mp4"}]
+    if on_start and track_name:
+        on_start(track_name)
 
-    downloader_options = {
-        "format": format_selector,
+    postprocessors = (
+        [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}]
+        if audio_only
+        else [{"key": "FFmpegVideoConvertor", "preferedformat": "mp4"}]
+    )
+
+    opts = {
+        "format": "bestaudio/best" if audio_only else "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
         "ignoreerrors": True,
-        "no_warnings": False,
+        "no_warnings": True,
+        "quiet": True,
         "noplaylist": False,
         "extract_flat": False,
         "postprocessors": postprocessors,
@@ -94,43 +89,50 @@ def download_single_video(
         "retries": MAX_RETRIES,
         "fragment_retries": MAX_RETRIES,
         "compat_opts": ["no-youtube-unavailable-videos"],
-        "youtube_include_dash_manifest": False,
         "nocheckcertificate": True,
-        "quiet": True,
-        "no_warnings": True,
+        "outtmpl": os.path.join(output_path, "%(title)s.%(ext)s"),
     }
-
     if not audio_only:
-        downloader_options["merge_output_format"] = "mp4"
+        opts["merge_output_format"] = "mp4"
 
-    content_type, _ = get_url_info(url)
-    downloader_options["outtmpl"] = os.path.join(output_path, "%(title)s.%(ext)s")
+    last_exc = None
+    success = False
+    title = ""
 
-    last_exception = None
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            with YoutubeDL(downloader_options) as ydl:
-                download_result = ydl.extract_info(url, download=True)
-                if download_result is None:
-                    return {"url": url, "success": False, "count": 0, "title": "", "message": "Failed to extract video information."}
-
-                if download_result.get("_type") == "playlist":
-                    title = download_result.get("title", "Unknown Playlist")
-                    video_count = len(download_result.get("entries", []))
-                    return {"url": url, "success": video_count > 0, "count": video_count, "title": title, "message": f"Downloaded {video_count} tracks"}
+    def _do_download():
+        nonlocal last_exc, success, title
+        for attempt in range(1, MAX_RETRIES + 1):
+            try:
+                with YoutubeDL(opts) as ydl:
+                    info = ydl.extract_info(url, download=True)
+                if info is None:
+                    return {"url": url, "success": False, "count": 0, "title": "", "message": "No info returned."}
+                if info.get("_type") == "playlist":
+                    t = info.get("title", "Unknown")
+                    n = len(info.get("entries", []))
+                    success = n > 0
+                    title = t
+                    return {"url": url, "success": success, "count": n, "title": t, "message": f"Downloaded {n} items"}
                 else:
-                    title = download_result.get("title", "Unknown")
-                    progress_fn(f"Downloaded: {title}")
-                    return {"url": url, "success": True, "count": 1, "title": title, "message": f"Downloaded: {title}"}
-        except Exception as error:
-            last_exception = error
-            if attempt < MAX_RETRIES:
-                retry_delay = RETRY_DELAY * (2 ** (attempt - 1))
-                time.sleep(retry_delay)
-            else:
-                return {"url": url, "success": False, "count": 0, "title": "", "message": f"Failed after {MAX_RETRIES} attempts: {str(last_exception)}"}
+                    title = info.get("title", "Unknown")
+                    success = True
+                    return {"url": url, "success": True, "count": 1, "title": title, "message": f"Done: {title}"}
+            except Exception as e:
+                last_exc = e
+                if attempt < MAX_RETRIES:
+                    time.sleep(RETRY_DELAY * (2 ** (attempt - 1)))
+        return {"url": url, "success": False, "count": 0, "title": "", "message": str(last_exc)}
 
-    return {"url": url, "success": False, "count": 0, "title": "", "message": str(last_exception)}
+    if global_semaphore is not None:
+        with global_semaphore:
+            result = _do_download()
+    else:
+        result = _do_download()
+
+    if on_done and track_name:
+        on_done(track_name, result.get("success", False))
+
+    return result
 
 
 def download_youtube_content(
@@ -138,20 +140,34 @@ def download_youtube_content(
     output_path: Optional[str] = None,
     max_workers: int = DEFAULT_CONCURRENT_WORKERS,
     audio_only: bool = False,
-    progress_fn: Callable[[str], None] = print,
+    on_track_start: Callable[[str], None] | None = None,
+    on_track_done: Callable[[str, bool], None] | None = None,
+    url_to_name: dict | None = None,
+    global_semaphore=None,
 ) -> List[dict]:
     if output_path is None:
         output_path = os.path.join(os.getcwd(), "downloads")
     os.makedirs(output_path, exist_ok=True)
 
+    name_map = url_to_name or {}
+
     results = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_url = {
-            executor.submit(download_single_video, url, output_path, i + 1, audio_only, progress_fn): url
+        futures = {
+            executor.submit(
+                download_single_video,
+                url,
+                output_path,
+                i + 1,
+                audio_only,
+                name_map.get(url),
+                on_track_start,
+                on_track_done,
+                global_semaphore,
+            ): url
             for i, url in enumerate(urls)
         }
-        for future in as_completed(future_to_url):
-            result = future.result()
-            results.append(result)
+        for future in as_completed(futures):
+            results.append(future.result())
 
     return results

@@ -1,2 +1,7 @@
 [tool.uv.workspace]
-members = ["services/gateway", "services/green-to-red"]
+members = [
+    "services/gateway",
+    "services/green-to-red",
+    "services/yt-bulk-dl",
+    "services/edl-to-archive",
+]

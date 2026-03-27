@@ -8,6 +8,8 @@ dependencies = [
     "jinja2>=3.1",
     "python-multipart>=0.0.20",
     "green-to-red",
+    "yt-bulk-dl",
+    "edl-to-archive",
 ]
 
 [build-system]
@@ -19,3 +21,5 @@ packages = ["gateway"]
 
 [tool.uv.sources]
 green-to-red = { workspace = true }
+yt-bulk-dl = { workspace = true }
+edl-to-archive = { workspace = true }
