@@ -939,3 +939,44 @@ html.dark .done-panel {
   color: var(--text);
   font-size: 0.97rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ELAPSED TIME
+   ═══════════════════════════════════════════════════════════════════════════ */
+.elapsed-time {
+  font-size: 0.86rem;
+  color: var(--text-tertiary);
+  margin-bottom: 0.4rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACTIVITY LOG
+   ═══════════════════════════════════════════════════════════════════════════ */
+.activity-log-details {
+  margin-top: 1.2rem;
+}
+
+.activity-log {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.5rem 1rem;
+  font-size: 0.82rem;
+  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+  line-height: 1.65;
+}
+
+.log-entry {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.log-time {
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.log-msg {
+  color: var(--text-secondary);
+  word-break: break-word;
+}
