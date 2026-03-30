@@ -14,13 +14,16 @@ Progress reporting uses structured dict events (not strings):
 """
 
 import csv
+import logging
 import os
 import re
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
+
+logger = logging.getLogger("g2r.pipeline")
 
 try:
     import musicbrainzngs
@@ -55,6 +58,7 @@ class PipelineResult:
 
 
 def _note(cb: Callable[[dict], None], msg: str) -> None:
+    logger.info(msg)
     cb({"type": "note", "msg": msg})
 
 
@@ -344,6 +348,7 @@ def run_pipeline(
     note = lambda msg: cb({"type": "note", "msg": msg})  # noqa: E731
 
     # ── 1. Spotify ──────────────────────────────────────────────────────────
+    logger.info("Phase: spotify — fetching content")
     cb({"type": "phase", "phase": "spotify"})
     client = SpotifyClient(log_level="WARNING")
     try:
@@ -358,16 +363,29 @@ def run_pipeline(
     if not tracks:
         raise PipelineError("No tracks found for this Spotify URL.")
 
+    logger.info("Spotify done: '%s' — %d tracks", content_name, len(tracks))
     cb({"type": "spotify_done", "content_name": content_name, "track_count": len(tracks)})
 
     # ── 2. YouTube search + Download + Metadata (all in "tracks" phase) ────
+    logger.info("Phase: tracks — searching YouTube & downloading")
     cb({"type": "phase", "phase": "tracks"})
 
     display_names = [_track_display_name(t) for t in tracks]
     cb({"type": "tracks_init", "names": display_names})
 
+    # Search YouTube incrementally — emit yt_result as each search completes
+    video_ids = [None] * len(tracks)
     with ThreadPoolExecutor() as executor:
-        video_ids = list(executor.map(get_youtube_link, tracks))
+        future_to_idx = {
+            executor.submit(get_youtube_link, t): i
+            for i, t in enumerate(tracks)
+        }
+        for future in as_completed(future_to_idx):
+            i = future_to_idx[future]
+            video_ids[i] = future.result()
+            dname = display_names[i]
+            found = video_ids[i] is not None
+            cb({"type": "yt_result", "name": dname, "found": found})
 
     youtube_urls = []
     url_to_name: dict[str, str] = {}
@@ -378,10 +396,8 @@ def run_pipeline(
             url = f"https://www.youtube.com/watch?v={video_id}"
             youtube_urls.append(url)
             url_to_name[url] = dname
-            cb({"type": "yt_result", "name": dname, "found": True})
         else:
             not_found.append(dname)
-            cb({"type": "yt_result", "name": dname, "found": False})
 
     if not youtube_urls:
         raise PipelineError("None of the tracks could be found on YouTube.")

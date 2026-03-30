@@ -7,6 +7,7 @@ Web-specific changes:
 - Quiet yt-dlp output (logs go to server stdout, not shown to the user)
 """
 
+import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -15,6 +16,8 @@ from typing import Callable, List, Optional
 from urllib.parse import parse_qs, urlparse
 
 from yt_dlp import YoutubeDL
+
+logger = logging.getLogger("g2r.download")
 
 MAX_RETRIES = 3
 RETRY_DELAY = 2
@@ -70,6 +73,8 @@ def download_single_video(
     if on_start and track_name:
         on_start(track_name)
 
+    logger.info("DL start: %s", track_name or url)
+
     postprocessors = (
         [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}]
         if audio_only
@@ -119,6 +124,7 @@ def download_single_video(
                     return {"url": url, "success": True, "count": 1, "title": title, "message": f"Done: {title}"}
             except Exception as e:
                 last_exc = e
+                logger.warning("Retry %d/%d for %s: %s", attempt, MAX_RETRIES, track_name or url, e)
                 if attempt < MAX_RETRIES:
                     time.sleep(RETRY_DELAY * (2 ** (attempt - 1)))
         return {"url": url, "success": False, "count": 0, "title": "", "message": str(last_exc)}
@@ -129,8 +135,14 @@ def download_single_video(
     else:
         result = _do_download()
 
+    ok = result.get("success", False)
+    if ok:
+        logger.info("DL done:  %s", track_name or url)
+    else:
+        logger.warning("DL fail:  %s — %s", track_name or url, result.get("message", ""))
+
     if on_done and track_name:
-        on_done(track_name, result.get("success", False))
+        on_done(track_name, ok)
 
     return result
 
