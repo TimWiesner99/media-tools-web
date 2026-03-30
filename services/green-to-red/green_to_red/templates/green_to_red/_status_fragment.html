@@ -18,6 +18,10 @@
   {% endif %}
 >
 
+{% if job.status not in ("done", "error") %}
+<p class="elapsed-time">Elapsed: {{ elapsed }}</p>
+{% endif %}
+
 {% if job.status == "error" %}
   <div class="error-banner">
     <strong>Conversion failed:</strong> {{ job.error or "An unknown error occurred." }}
@@ -106,6 +110,21 @@
   </div>
 
 </div>{# end .pipeline-steps #}
+
+{# ── Activity log ─────────────────────────────────────────────────── #}
+{% if activity_log %}
+<details class="activity-log-details" {% if job.status not in ("done",) %}open{% endif %}>
+  <summary>Activity log ({{ activity_log | length }})</summary>
+  <div class="activity-log">
+    {% for ts, msg in activity_log | reverse %}
+    <div class="log-entry">
+      <span class="log-time">{{ ts | logtime }}</span>
+      <span class="log-msg">{{ msg }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</details>
+{% endif %}
 
 {# ── Done / Download button ───────────────────────────────────────── #}
 {% if job.status == "done" %}

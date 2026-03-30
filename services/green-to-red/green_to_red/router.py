@@ -1,5 +1,7 @@
 """FastAPI router for the green-to-red service."""
 
+from datetime import datetime
+
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 
@@ -11,6 +13,14 @@ from green_to_red.job_runner import (
     launch_job,
     touch_job,
 )
+
+
+def _elapsed(job) -> str:
+    """Human-readable elapsed time since job creation."""
+    delta = datetime.utcnow() - job.created_at
+    total = int(delta.total_seconds())
+    mins, secs = divmod(total, 60)
+    return f"{mins}m {secs:02d}s"
 
 router = APIRouter()
 
@@ -59,7 +69,7 @@ async def start_convert(
     job = create_job(user_id=user_id)
     await launch_job(job.job_id, spotify_url)
     return RedirectResponse(
-        url=request.url_for("job_page", job_id=job.job_id), status_code=303
+        url=request.url_for("job_page", job_id=job.job_id).path, status_code=303
     )
 
 
@@ -72,11 +82,17 @@ async def job_page(request: Request, job_id: str):
             {"error": "Job not found. It may have expired."},
             status_code=404,
         )
-    fragment_url = str(request.url_for("job_fragment", job_id=job_id))
-    download_url = str(request.url_for("job_download", job_id=job_id))
+    fragment_url = request.url_for("job_fragment", job_id=job_id).path
+    download_url = request.url_for("job_download", job_id=job_id).path
     return _templates(request).TemplateResponse(
         request, "green_to_red/job_status.html",
-        {"job": job, "fragment_url": fragment_url, "download_url": download_url},
+        {
+            "job": job,
+            "fragment_url": fragment_url,
+            "download_url": download_url,
+            "elapsed": _elapsed(job),
+            "activity_log": job.get_activity_log(),
+        },
     )
 
 
@@ -102,12 +118,17 @@ async def job_fragment(request: Request, job_id: str):
     job = get_job(job_id)
     if job is None:
         return JSONResponse({"error": "Job not found."}, status_code=404)
-    touch_job(job_id)
-    fragment_url = str(request.url_for("job_fragment", job_id=job_id))
-    download_url = str(request.url_for("job_download", job_id=job_id))
+    fragment_url = request.url_for("job_fragment", job_id=job_id).path
+    download_url = request.url_for("job_download", job_id=job_id).path
     return _templates(request).TemplateResponse(
         request, "green_to_red/_status_fragment.html",
-        {"job": job, "fragment_url": fragment_url, "download_url": download_url},
+        {
+            "job": job,
+            "fragment_url": fragment_url,
+            "download_url": download_url,
+            "elapsed": _elapsed(job),
+            "activity_log": job.get_activity_log(),
+        },
     )
 
 

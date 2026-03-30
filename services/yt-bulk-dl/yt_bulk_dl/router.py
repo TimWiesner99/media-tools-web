@@ -60,7 +60,7 @@ async def start_convert(
     job = create_job(urls, prefix=prefix_val, max_length=max_length, user_id=user_id)
     await launch_job(job.job_id, urls)
     return RedirectResponse(
-        url=request.url_for("job_page", job_id=job.job_id), status_code=303
+        url=request.url_for("job_page", job_id=job.job_id).path, status_code=303
     )
 
 
@@ -73,8 +73,8 @@ async def job_page(request: Request, job_id: str):
             {"error": "Job not found. It may have expired."},
             status_code=404,
         )
-    fragment_url = str(request.url_for("job_fragment", job_id=job_id))
-    download_url = str(request.url_for("job_download", job_id=job_id))
+    fragment_url = request.url_for("job_fragment", job_id=job_id).path
+    download_url = request.url_for("job_download", job_id=job_id).path
     return _templates(request).TemplateResponse(
         request, "yt_bulk_dl/job_status.html",
         {"job": job, "fragment_url": fragment_url, "download_url": download_url},

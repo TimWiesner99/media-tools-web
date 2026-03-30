@@ -2,9 +2,11 @@
 
 import io
 import asyncio
+import logging
 import shutil
 import tempfile
 import threading
+import time
 import uuid
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
@@ -15,10 +17,14 @@ from pathlib import Path
 from green_to_red.core.pipeline import PipelineError, PipelineResult, run_pipeline
 from green_to_red.settings import get_semaphore, get_settings
 
+logger = logging.getLogger("g2r.job")
+
 # Thread pool for pipeline orchestration (not for yt-dlp downloads themselves)
 _executor = ThreadPoolExecutor(max_workers=4)
 _jobs: dict[str, "Job"] = {}
 _jobs_lock = threading.Lock()
+
+MAX_LOG_ENTRIES = 200
 
 
 @dataclass
@@ -42,7 +48,14 @@ class Job:
     created_at: datetime
     last_accessed: datetime
     output_dir: Path | None
+    activity_log: list[tuple[float, str]] = field(default_factory=list)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+
+    def _log(self, msg: str) -> None:
+        """Append a timestamped message to the activity log (must be called under _lock)."""
+        self.activity_log.append((time.time(), msg))
+        if len(self.activity_log) > MAX_LOG_ENTRIES:
+            self.activity_log = self.activity_log[-MAX_LOG_ENTRIES:]
 
     def on_event(self, event: dict) -> None:
         """Callback called by the pipeline thread with structured progress events."""
@@ -50,30 +63,49 @@ class Job:
             t = event.get("type")
             if t == "phase":
                 self.phase = event["phase"]
+                self._log(f"Phase: {event['phase']}")
             elif t == "spotify_done":
                 self.content_name = event.get("content_name")
+                self._log(f"Fetched: {event.get('content_name')} ({event.get('track_count')} tracks)")
             elif t == "tracks_init":
                 self.track_states = [TrackState(display_name=n) for n in event["names"]]
+                self._log(f"Searching YouTube for {len(event['names'])} tracks…")
             elif t == "yt_result":
+                name = event["name"]
+                found = event["found"]
                 for ts in self.track_states:
-                    if ts.display_name == event["name"]:
-                        ts.yt_status = "found" if event["found"] else "not_found"
+                    if ts.display_name == name:
+                        ts.yt_status = "found" if found else "not_found"
                         break
+                self._log(f"YT {'found' if found else 'NOT found'}: {name}")
             elif t == "dl_start":
+                name = event["name"]
                 for ts in self.track_states:
-                    if ts.display_name == event["name"]:
+                    if ts.display_name == name:
                         ts.dl_status = "downloading"
                         break
+                self._log(f"Downloading: {name}")
             elif t == "dl_done":
+                name = event["name"]
+                ok = event.get("success")
                 for ts in self.track_states:
-                    if ts.display_name == event["name"]:
-                        ts.dl_status = "done" if event.get("success") else "error"
+                    if ts.display_name == name:
+                        ts.dl_status = "done" if ok else "error"
                         break
+                self._log(f"{'Downloaded' if ok else 'Download failed'}: {name}")
             elif t == "mb_start":
                 self.mb_status = "running"
+                self._log("MusicBrainz metadata lookup started")
             elif t == "mb_done":
                 self.mb_status = "done"
-            # "note" events (internal progress strings) are intentionally ignored
+                self._log("Metadata CSV ready")
+            elif t == "note":
+                self._log(event.get("msg", ""))
+
+    def get_activity_log(self) -> list[tuple[float, str]]:
+        """Return a thread-safe snapshot of the activity log."""
+        with self._lock:
+            return list(self.activity_log)
 
     @property
     def dl_done_count(self) -> int:
@@ -147,6 +179,7 @@ def cleanup_jobs_for_user(user_id: str) -> None:
 
 def _run_job(job: "Job", spotify_url: str) -> None:
     """Blocking function executed in the thread pool."""
+    logger.info("Job %s started — URL: %s", job.job_id[:8], spotify_url)
     job.status = "running"
     output_dir = Path(tempfile.mkdtemp(prefix=f"g2r_{job.job_id}_"))
     job.output_dir = output_dir
@@ -165,14 +198,20 @@ def _run_job(job: "Job", spotify_url: str) -> None:
         job.result = result
         job.status = "done"
         job.phase = "done"
+        logger.info(
+            "Job %s done — %d/%d tracks downloaded",
+            job.job_id[:8], result.downloaded_count, result.track_count,
+        )
     except PipelineError as e:
         job.error = str(e)
         job.status = "error"
         job.phase = "error"
+        logger.error("Job %s pipeline error: %s", job.job_id[:8], e)
     except Exception as e:
         job.error = f"Unexpected error: {e}"
         job.status = "error"
         job.phase = "error"
+        logger.exception("Job %s unexpected error", job.job_id[:8])
 
 
 async def launch_job(job_id: str, spotify_url: str) -> None:
