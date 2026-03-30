@@ -17,9 +17,10 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
     level=logging.INFO,
 )
-# Suppress noisy yt-dlp / ffmpeg / urllib3 output
+# Suppress noisy library loggers
 logging.getLogger("yt_dlp").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("musicbrainzngs").setLevel(logging.WARNING)
 
 BASE_DIR = Path(__file__).parent
 
