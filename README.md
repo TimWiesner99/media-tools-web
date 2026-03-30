@@ -2,6 +2,11 @@
 
 A small collection of useful tools for media production, made during my internship at the VPRO.
 
+On a remote server, run he webserver with
+```
+uv run --package gateway uvicorn gateway.main:app --host 0.0.0.0 --port 8000
+```
+
 ## edl-to-archive
 Simple script to convert EDL and archive source lists to complete archive lists with timecodes and source links.
 
