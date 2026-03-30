@@ -3,30 +3,39 @@
 {% block title %}Spotify → MP3{% endblock %}
 
 {% block content %}
-<h1>Spotify → MP3</h1>
-<p>
-  Enter a Spotify playlist, album, or track URL to download the audio as MP3 files,
-  along with a CSV of licensing metadata.
-</p>
+<div class="win95-window">
+  <div class="win95-title-bar">
+    <span class="win95-title-bar-icon">🎵</span>
+    <span class="win95-title-bar-text">Spotify → MP3</span>
+    <div class="win95-title-bar-buttons">
+      <span>_</span><span>□</span><span>×</span>
+    </div>
+  </div>
+  <div class="win95-window-content">
 
-{% if error %}
-<div class="error-banner">
-  <strong>Error:</strong> {{ error }}
+    <p>Enter a Spotify playlist, album, or track URL to download the audio as MP3 files, along with a CSV of licensing metadata.</p>
+
+    {% if error %}
+    <div class="error-banner"><strong>Error:</strong> {{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="convert">
+      <label for="spotify_url">
+        Spotify URL
+        <input
+          type="url"
+          id="spotify_url"
+          name="spotify_url"
+          placeholder="https://open.spotify.com/playlist/…"
+          required
+          autofocus
+        />
+      </label>
+      <div style="margin-top:8px;">
+        <button type="submit" class="btn-action">Start download</button>
+      </div>
+    </form>
+
+  </div>
 </div>
-{% endif %}
-
-<form method="post" action="convert">
-  <label for="spotify_url">
-    Spotify URL
-    <input
-      type="url"
-      id="spotify_url"
-      name="spotify_url"
-      placeholder="https://open.spotify.com/playlist/…"
-      required
-      autofocus
-    />
-  </label>
-  <button type="submit" class="btn-action">Start download</button>
-</form>
 {% endblock %}

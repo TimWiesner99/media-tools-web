@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Account — Media Tools{% endblock %}
+
+{% block content %}
+<div class="win95-window">
+  <div class="win95-title-bar">
+    <span class="win95-title-bar-icon">👤</span>
+    <span class="win95-title-bar-text">Account Settings — {{ user.username }}</span>
+    <div class="win95-title-bar-buttons">
+      <span>_</span><span>□</span><span>×</span>
+    </div>
+  </div>
+  <div class="win95-window-content">
+
+    <div style="margin-bottom:10px;">
+      <strong>Username:</strong> {{ user.username }}<br>
+      <strong>Role:</strong> {{ user.role }}<br>
+      <strong>Provider:</strong> {{ user.auth_provider }}
+    </div>
+
+    <hr>
+
+    {% if user.auth_provider == "local" %}
+    <div class="win95-window">
+      <div class="win95-title-bar">
+        <span class="win95-title-bar-text">Change Password</span>
+      </div>
+      <div class="win95-window-content">
+
+        {% if error %}
+        <div class="error-banner">{{ error }}</div>
+        {% endif %}
+        {% if saved %}
+        <div class="success-banner">Password changed successfully.</div>
+        {% endif %}
+
+        <form id="pw-form" method="post" action="/account/password" onsubmit="return hashPasswords(event)">
+          <input type="hidden" name="current_hash" id="current-hash" />
+          <input type="hidden" name="new_hash" id="new-hash" />
+          <input type="hidden" name="confirm_hash" id="confirm-hash" />
+          <label>
+            Current Password
+            <input type="password" id="current-pw" autocomplete="current-password" required />
+          </label>
+          <label>
+            New Password
+            <input type="password" id="new-pw" autocomplete="new-password" required />
+          </label>
+          <label>
+            Confirm New Password
+            <input type="password" id="confirm-pw" autocomplete="new-password" required />
+          </label>
+          <div style="margin-top:8px;">
+            <button type="submit" class="btn-action">Change Password</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <p style="color:var(--win95-text-dim);">Password management is not available for SSO accounts.</p>
+    {% endif %}
+
+  </div>
+</div>
+
+<script>
+async function sha256hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function hashPasswords(event) {
+  event.preventDefault();
+  const cur  = document.getElementById('current-pw').value;
+  const nw   = document.getElementById('new-pw').value;
+  const conf = document.getElementById('confirm-pw').value;
+  document.getElementById('current-hash').value  = await sha256hex(cur);
+  document.getElementById('new-hash').value       = await sha256hex(nw);
+  document.getElementById('confirm-hash').value   = await sha256hex(conf);
+  document.getElementById('current-pw').value = '';
+  document.getElementById('new-pw').value = '';
+  document.getElementById('confirm-pw').value = '';
+  event.target.submit();
+  return false;
+}
+</script>
+{% endblock %}

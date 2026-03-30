@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).parent
 async def _periodic_cleanup():
     while True:
         await asyncio.sleep(30 * 60)  # every 30 minutes
-        await cleanup_old_jobs(max_age_hours=2)
+        await cleanup_old_jobs(max_age_minutes=30)
 
 
 @asynccontextmanager

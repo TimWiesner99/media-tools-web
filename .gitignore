@@ -20,3 +20,9 @@ downloads/
 # OS
 .DS_Store
 Thumbs.db
+
+# Environment / secrets
+.env
+
+# Database files
+*.db

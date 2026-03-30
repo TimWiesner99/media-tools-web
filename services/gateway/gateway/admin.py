@@ -1,36 +1,25 @@
-"""Admin panel — protected by HTTP Basic Auth.
+"""Admin panel — protected by session-based auth (role: admin).
 
-Password is read from the ADMIN_PASSWORD environment variable.
-Default is "admin" — change it before exposing to the internet.
-
-In a later phase this will be replaced by proper user accounts with roles.
+The HTTP Basic Auth from the original implementation has been replaced by
+the session auth system. The _require_admin() helper reads request.state.user
+which is set by AuthMiddleware for every authenticated request.
 """
 
-import os
-import secrets
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 
 BASE_DIR = Path(__file__).parent
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 router = APIRouter(prefix="/admin")
-_security = HTTPBasic()
 
 
-def _require_admin(credentials: HTTPBasicCredentials = Depends(_security)) -> None:
-    admin_password = os.environ.get("ADMIN_PASSWORD", "admin")
-    ok_user = secrets.compare_digest(credentials.username.encode(), b"admin")
-    ok_pass = secrets.compare_digest(credentials.password.encode(), admin_password.encode())
-    if not (ok_user and ok_pass):
-        raise HTTPException(
-            status_code=401,
-            detail="Unauthorized",
-            headers={"WWW-Authenticate": "Basic"},
-        )
+def _require_admin(request: Request) -> None:
+    user = getattr(request.state, "user", None)
+    if user is None or user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required.")
 
 
 def _get_all_settings():
@@ -48,42 +37,49 @@ def _get_all_settings():
     return settings
 
 
-@router.get("/", dependencies=[Depends(_require_admin)])
+@router.get("/")
 async def admin_page(request: Request):
+    _require_admin(request)
     return templates.TemplateResponse(
-        request, "admin/index.html", {"settings": _get_all_settings()}
+        request,
+        "admin/index.html",
+        {"settings": _get_all_settings(), "user": request.state.user},
     )
 
 
-@router.post("/settings/green-to-red", dependencies=[Depends(_require_admin)])
+@router.post("/settings/green-to-red")
 async def update_green_to_red_settings(
     request: Request,
     max_workers_per_job: int = Form(...),
     max_workers_global: int = Form(...),
 ):
+    _require_admin(request)
     from green_to_red.settings import update_settings
     update_settings(
         max_workers_per_job=max(1, min(20, max_workers_per_job)),
         max_workers_global=max(1, min(100, max_workers_global)),
     )
     return templates.TemplateResponse(
-        request, "admin/index.html",
-        {"settings": _get_all_settings(), "saved": "green_to_red"},
+        request,
+        "admin/index.html",
+        {"settings": _get_all_settings(), "saved": "green_to_red", "user": request.state.user},
     )
 
 
-@router.post("/settings/yt-bulk-dl", dependencies=[Depends(_require_admin)])
+@router.post("/settings/yt-bulk-dl")
 async def update_yt_bulk_dl_settings(
     request: Request,
     max_workers_per_job: int = Form(...),
     max_workers_global: int = Form(...),
 ):
+    _require_admin(request)
     from yt_bulk_dl.settings import update_settings
     update_settings(
         max_workers_per_job=max(1, min(20, max_workers_per_job)),
         max_workers_global=max(1, min(100, max_workers_global)),
     )
     return templates.TemplateResponse(
-        request, "admin/index.html",
-        {"settings": _get_all_settings(), "saved": "yt_bulk_dl"},
+        request,
+        "admin/index.html",
+        {"settings": _get_all_settings(), "saved": "yt_bulk_dl", "user": request.state.user},
     )

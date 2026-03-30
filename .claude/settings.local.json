@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/T.Wiesner/repos/media-tools-web/services -type d -not -path */.*)",
+      "Bash(python3 -c \"import starlette; print\\(starlette.__version__\\)\")",
+      "Bash(uv run:*)",
+      "Bash(python -c \"import secrets; print\\(secrets.token_hex\\(32\\)\\)\")",
+      "Bash(uv sync:*)"
+    ]
+  }
+}

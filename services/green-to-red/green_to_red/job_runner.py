@@ -31,14 +31,16 @@ class TrackState:
 @dataclass
 class Job:
     job_id: str
-    status: str     # pending | running | done | error
-    phase: str      # pending | spotify | tracks | done | error
-    mb_status: str  # pending | running | done
+    user_id: str           # ID of the user who owns this job
+    status: str            # pending | running | done | error
+    phase: str             # pending | spotify | tracks | done | error
+    mb_status: str         # pending | running | done
     content_name: str | None
     track_states: list[TrackState]
     result: PipelineResult | None
     error: str | None
     created_at: datetime
+    last_accessed: datetime
     output_dir: Path | None
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
@@ -82,10 +84,12 @@ class Job:
         return sum(1 for t in self.track_states if t.yt_status == "found")
 
 
-def create_job() -> Job:
+def create_job(user_id: str) -> "Job":
+    now = datetime.utcnow()
     job_id = uuid.uuid4().hex
     job = Job(
         job_id=job_id,
+        user_id=user_id,
         status="pending",
         phase="pending",
         mb_status="pending",
@@ -93,7 +97,8 @@ def create_job() -> Job:
         track_states=[],
         result=None,
         error=None,
-        created_at=datetime.utcnow(),
+        created_at=now,
+        last_accessed=now,
         output_dir=None,
     )
     with _jobs_lock:
@@ -101,12 +106,46 @@ def create_job() -> Job:
     return job
 
 
-def get_job(job_id: str) -> Job | None:
+def get_job(job_id: str) -> "Job | None":
     with _jobs_lock:
         return _jobs.get(job_id)
 
 
-def _run_job(job: Job, spotify_url: str) -> None:
+def touch_job(job_id: str) -> None:
+    """Update last_accessed timestamp to reset the 30-minute inactivity timer."""
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if job is not None:
+            job.last_accessed = datetime.utcnow()
+
+
+def get_active_job_for_user(user_id: str) -> "Job | None":
+    """Return the first non-terminal job belonging to this user, or None."""
+    with _jobs_lock:
+        for job in _jobs.values():
+            if job.user_id == user_id and job.status not in ("done", "error"):
+                return job
+    return None
+
+
+def cleanup_jobs_for_user(user_id: str) -> None:
+    """Delete all jobs (and their output files) belonging to a user.
+    Called on logout to free storage immediately.
+    """
+    to_delete = []
+    with _jobs_lock:
+        for job_id, job in _jobs.items():
+            if job.user_id == user_id:
+                to_delete.append(job_id)
+
+    for job_id in to_delete:
+        with _jobs_lock:
+            job = _jobs.pop(job_id, None)
+        if job and job.output_dir and job.output_dir.exists():
+            shutil.rmtree(job.output_dir, ignore_errors=True)
+
+
+def _run_job(job: "Job", spotify_url: str) -> None:
     """Blocking function executed in the thread pool."""
     job.status = "running"
     output_dir = Path(tempfile.mkdtemp(prefix=f"g2r_{job.job_id}_"))
@@ -144,7 +183,7 @@ async def launch_job(job_id: str, spotify_url: str) -> None:
     loop.run_in_executor(_executor, _run_job, job, spotify_url)
 
 
-def build_zip(job: Job) -> io.BytesIO:
+def build_zip(job: "Job") -> io.BytesIO:
     buf = io.BytesIO()
     mp3_dir = job.result.mp3_dir if job.result else job.output_dir
     if mp3_dir is None or not mp3_dir.exists():
@@ -159,13 +198,14 @@ def build_zip(job: Job) -> io.BytesIO:
     return buf
 
 
-async def cleanup_old_jobs(max_age_hours: int = 2) -> None:
-    cutoff = datetime.utcnow() - timedelta(hours=max_age_hours)
+async def cleanup_old_jobs(max_age_minutes: int = 30) -> None:
+    """Remove jobs that have been inactive for longer than max_age_minutes."""
+    cutoff = datetime.utcnow() - timedelta(minutes=max_age_minutes)
     to_delete = []
 
     with _jobs_lock:
         for job_id, job in _jobs.items():
-            if job.created_at < cutoff:
+            if job.last_accessed < cutoff:
                 to_delete.append(job_id)
 
     for job_id in to_delete:

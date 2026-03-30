@@ -3,55 +3,64 @@
 {% block title %}YT Bulk Download{% endblock %}
 
 {% block content %}
-<h1>YouTube Bulk Download</h1>
-<p>
-  Enter YouTube URLs to download as MP4 (H.264 + AAC). One URL per line.
-  Lines starting with <code>#</code> are treated as comments.
-</p>
-
-{% if error %}
-<div class="error-banner">
-  <strong>Error:</strong> {{ error }}
-</div>
-{% endif %}
-
-<form method="post" action="convert">
-  <label for="urls_text">
-    YouTube URLs
-    <textarea
-      id="urls_text"
-      name="urls_text"
-      rows="10"
-      placeholder="https://www.youtube.com/watch?v=…&#10;# optional comment&#10;https://www.youtube.com/watch?v=…"
-      required
-      autofocus
-    >{{ urls_text or "" }}</textarea>
-  </label>
-
-  <div class="form-grid">
-    <label>
-      <span>Filename prefix <span class="tooltip-icon" data-tooltip="Optional. Prepended to every output filename — e.g. prefix_title.mp4. Letters, numbers, underscores and hyphens only.">?</span></span>
-      <input
-        type="text"
-        name="prefix"
-        value="{{ prefix or '' }}"
-        placeholder="e.g. DL_monday"
-        pattern="[\w\-]+"
-        title="Letters, numbers, underscores and hyphens only"
-      />
-    </label>
-    <label>
-      <span>Max title length <span class="tooltip-icon" data-tooltip="Character limit for the title portion of the filename. Default is 40.">?</span></span>
-      <input
-        type="number"
-        name="max_length"
-        value="{{ max_length or 40 }}"
-        min="10"
-        max="100"
-      />
-    </label>
+<div class="win95-window">
+  <div class="win95-title-bar">
+    <span class="win95-title-bar-icon">▶</span>
+    <span class="win95-title-bar-text">YouTube Bulk Download</span>
+    <div class="win95-title-bar-buttons">
+      <span>_</span><span>□</span><span>×</span>
+    </div>
   </div>
+  <div class="win95-window-content">
 
-  <button type="submit" class="btn-action">Start download</button>
-</form>
+    <p>Enter YouTube URLs to download as MP4 (H.264 + AAC). One URL per line. Lines starting with <code>#</code> are treated as comments.</p>
+
+    {% if error %}
+    <div class="error-banner"><strong>Error:</strong> {{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="convert">
+      <label for="urls_text">
+        YouTube URLs
+        <textarea
+          id="urls_text"
+          name="urls_text"
+          rows="10"
+          placeholder="https://www.youtube.com/watch?v=…&#10;# optional comment&#10;https://www.youtube.com/watch?v=…"
+          required
+          autofocus
+        >{{ urls_text or "" }}</textarea>
+      </label>
+
+      <div class="form-grid" style="margin-top:8px;">
+        <label>
+          Filename prefix <span class="tooltip-icon" data-tooltip="Optional. Prepended to every output filename — e.g. prefix_title.mp4. Letters, numbers, underscores and hyphens only.">?</span>
+          <input
+            type="text"
+            name="prefix"
+            value="{{ prefix or '' }}"
+            placeholder="e.g. DL_monday"
+            pattern="[\w\-]+"
+            title="Letters, numbers, underscores and hyphens only"
+          />
+        </label>
+        <label>
+          Max title length <span class="tooltip-icon" data-tooltip="Character limit for the title portion of the filename. Default is 40.">?</span>
+          <input
+            type="number"
+            name="max_length"
+            value="{{ max_length or 40 }}"
+            min="10"
+            max="100"
+          />
+        </label>
+      </div>
+
+      <div style="margin-top:8px;">
+        <button type="submit" class="btn-action">Start download</button>
+      </div>
+    </form>
+
+  </div>
+</div>
 {% endblock %}

@@ -3,7 +3,14 @@
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 
-from green_to_red.job_runner import build_zip, create_job, get_job, launch_job
+from green_to_red.job_runner import (
+    build_zip,
+    create_job,
+    get_active_job_for_user,
+    get_job,
+    launch_job,
+    touch_job,
+)
 
 router = APIRouter()
 
@@ -12,8 +19,20 @@ def _templates(request: Request):
     return request.app.state.templates
 
 
+def _user_id(request: Request) -> str:
+    """Read the X-User-Id header injected by the gateway AuthMiddleware."""
+    return request.headers.get("x-user-id", "anonymous")
+
+
 @router.get("/")
 async def form(request: Request):
+    user_id = _user_id(request)
+    # Redirect to active job if one exists
+    active = get_active_job_for_user(user_id)
+    if active is not None:
+        return RedirectResponse(
+            url=request.url_for("job_page", job_id=active.job_id), status_code=302
+        )
     return _templates(request).TemplateResponse(request, "green_to_red/form.html")
 
 
@@ -36,7 +55,8 @@ async def start_convert(
             status_code=422,
         )
 
-    job = create_job()
+    user_id = _user_id(request)
+    job = create_job(user_id=user_id)
     await launch_job(job.job_id, spotify_url)
     return RedirectResponse(
         url=request.url_for("job_page", job_id=job.job_id), status_code=303
@@ -78,10 +98,11 @@ async def job_status(job_id: str):
 
 @router.get("/convert/{job_id}/fragment", name="job_fragment")
 async def job_fragment(request: Request, job_id: str):
-    """HTML partial for HTMX polling."""
+    """HTML partial for HTMX polling. Touching the job resets the 30-min timer."""
     job = get_job(job_id)
     if job is None:
         return JSONResponse({"error": "Job not found."}, status_code=404)
+    touch_job(job_id)
     fragment_url = str(request.url_for("job_fragment", job_id=job_id))
     download_url = str(request.url_for("job_download", job_id=job_id))
     return _templates(request).TemplateResponse(

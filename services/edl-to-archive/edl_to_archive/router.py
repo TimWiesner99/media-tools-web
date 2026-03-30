@@ -9,13 +9,12 @@ import tempfile
 from pathlib import Path
 
 import pandas as pd
-from fastapi import APIRouter, File, Form, Request, Response, UploadFile
+from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
 from edl_to_archive.core.pipeline import ConversionError, run_conversion
 from edl_to_archive.session_store import (
     UserSession,
-    attach_session_cookie,
     get_or_create_session,
     save_session,
 )
@@ -39,21 +38,18 @@ def _templates(request: Request):
     return request.app.state.templates
 
 
-def _form_response(request: Request, session: UserSession, is_new: bool,
+def _form_response(request: Request, session: UserSession,
                    error: str | None = None, success_stats: dict | None = None):
-    resp = _templates(request).TemplateResponse(
+    return _templates(request).TemplateResponse(
         request, "edl_to_archive/form.html",
         {"session": session, "error": error, "success_stats": success_stats},
     )
-    if is_new:
-        attach_session_cookie(resp, session)
-    return resp
 
 
 @router.get("/")
 async def form(request: Request):
-    session, is_new = get_or_create_session(request)
-    return _form_response(request, session, is_new)
+    session = get_or_create_session(request)
+    return _form_response(request, session)
 
 
 @router.post("/convert")
@@ -66,7 +62,7 @@ async def convert_edl(
     include_frames: str | None = Form(None),  # checkbox
     exclusion_rules: str = Form(""),
 ):
-    session, is_new = get_or_create_session(request)
+    session = get_or_create_session(request)
 
     # Persist updated session settings
     session.exclusion_rules = exclusion_rules
@@ -80,9 +76,9 @@ async def convert_edl(
     source_bytes = await source_file.read()
 
     if not edl_bytes:
-        return _form_response(request, session, is_new, error="EDL file is empty.")
+        return _form_response(request, session, error="EDL file is empty.")
     if not source_bytes:
-        return _form_response(request, session, is_new, error="Source file is empty.")
+        return _form_response(request, session, error="Source file is empty.")
 
     # Determine safe filenames (preserve extension for format detection)
     edl_name = edl_file.filename or "edl.xlsx"
@@ -123,21 +119,19 @@ async def convert_edl(
         loop = asyncio.get_event_loop()
         xlsx_bytes, stats = await loop.run_in_executor(None, _process)
     except ConversionError as e:
-        return _form_response(request, session, is_new, error=str(e))
+        return _form_response(request, session, error=str(e))
     except Exception as e:
-        return _form_response(request, session, is_new,
+        return _form_response(request, session,
                               error=f"Unexpected error during conversion: {e}")
     finally:
         if tmp_dir and tmp_dir.exists():
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
-    resp = StreamingResponse(
+    return StreamingResponse(
         io.BytesIO(xlsx_bytes),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="DEF.xlsx"'},
     )
-    attach_session_cookie(resp, session)
-    return resp
 
 
 @router.get("/template/{kind}")

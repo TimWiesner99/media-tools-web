@@ -32,14 +32,16 @@ class VideoState:
 @dataclass
 class Job:
     job_id: str
-    status: str       # pending | running | done | error
-    phase: str        # pending | download | done | error
+    user_id: str           # ID of the user who owns this job
+    status: str            # pending | running | done | error
+    phase: str             # pending | download | done | error
     video_states: list[VideoState]
     prefix: str | None
     max_length: int
     output_dir: Path | None
     error: str | None
     created_at: datetime
+    last_accessed: datetime
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def on_event(self, event: dict) -> None:
@@ -80,10 +82,12 @@ class Job:
         return sum(1 for v in self.video_states if v.status == "error")
 
 
-def create_job(urls: list[str], prefix: str | None, max_length: int) -> "Job":
+def create_job(urls: list[str], prefix: str | None, max_length: int, user_id: str = "anonymous") -> "Job":
+    now = datetime.utcnow()
     job_id = uuid.uuid4().hex
     job = Job(
         job_id=job_id,
+        user_id=user_id,
         status="pending",
         phase="pending",
         video_states=[],
@@ -91,7 +95,8 @@ def create_job(urls: list[str], prefix: str | None, max_length: int) -> "Job":
         max_length=max_length,
         output_dir=None,
         error=None,
-        created_at=datetime.utcnow(),
+        created_at=now,
+        last_accessed=now,
     )
     with _jobs_lock:
         _jobs[job_id] = job
@@ -101,6 +106,40 @@ def create_job(urls: list[str], prefix: str | None, max_length: int) -> "Job":
 def get_job(job_id: str) -> "Job | None":
     with _jobs_lock:
         return _jobs.get(job_id)
+
+
+def touch_job(job_id: str) -> None:
+    """Update last_accessed timestamp to reset the 30-minute inactivity timer."""
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if job is not None:
+            job.last_accessed = datetime.utcnow()
+
+
+def get_active_job_for_user(user_id: str) -> "Job | None":
+    """Return the first non-terminal job belonging to this user, or None."""
+    with _jobs_lock:
+        for job in _jobs.values():
+            if job.user_id == user_id and job.status not in ("done", "error"):
+                return job
+    return None
+
+
+def cleanup_jobs_for_user(user_id: str) -> None:
+    """Delete all jobs (and their output files) belonging to a user.
+    Called on logout to free storage immediately.
+    """
+    to_delete = []
+    with _jobs_lock:
+        for job_id, job in _jobs.items():
+            if job.user_id == user_id:
+                to_delete.append(job_id)
+
+    for job_id in to_delete:
+        with _jobs_lock:
+            job = _jobs.pop(job_id, None)
+        if job and job.output_dir and job.output_dir.exists():
+            shutil.rmtree(job.output_dir, ignore_errors=True)
 
 
 def _run_job(job: Job, urls: list[str]) -> None:
@@ -154,12 +193,13 @@ def build_zip(job: Job) -> io.BytesIO:
     return buf
 
 
-async def cleanup_old_jobs(max_age_hours: int = 2) -> None:
-    cutoff = datetime.utcnow() - timedelta(hours=max_age_hours)
+async def cleanup_old_jobs(max_age_minutes: int = 30) -> None:
+    """Remove jobs that have been inactive for longer than max_age_minutes."""
+    cutoff = datetime.utcnow() - timedelta(minutes=max_age_minutes)
     to_delete = []
     with _jobs_lock:
         for job_id, job in _jobs.items():
-            if job.created_at < cutoff:
+            if job.last_accessed < cutoff:
                 to_delete.append(job_id)
     for job_id in to_delete:
         with _jobs_lock:

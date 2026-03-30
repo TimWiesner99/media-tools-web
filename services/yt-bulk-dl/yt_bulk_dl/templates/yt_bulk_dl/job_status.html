@@ -8,12 +8,21 @@
 {% endblock %}
 
 {% block content %}
-<h1>
-  {% if job.status == "done" %}Download ready
-  {% elif job.status == "error" %}Download failed
-  {% else %}Downloading…
-  {% endif %}
-</h1>
-
-{% include "yt_bulk_dl/_status_fragment.html" %}
+<div class="win95-window">
+  <div class="win95-title-bar">
+    <span class="win95-title-bar-icon">▶</span>
+    <span class="win95-title-bar-text">
+      {% if job.status == "done" %}Download Ready
+      {% elif job.status == "error" %}Download Failed
+      {% else %}Downloading…
+      {% endif %} — YT Bulk Download
+    </span>
+    <div class="win95-title-bar-buttons">
+      <span>_</span><span>□</span><span>×</span>
+    </div>
+  </div>
+  <div class="win95-window-content">
+    {% include "yt_bulk_dl/_status_fragment.html" %}
+  </div>
+</div>
 {% endblock %}
