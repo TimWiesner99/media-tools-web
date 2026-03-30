@@ -19,11 +19,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Run the app (serves at http://localhost:8000)
+# Run the webserver locally for testing (serves at http://localhost:8000)
 uv run --package gateway uvicorn gateway.main:app --reload
 
 # Run a specific service in isolation (example)
 uv run --package green-to-red uvicorn green_to_red.main:app --reload --port 8001
+
+# In production/on a remote server, run the webserver with
+uv run --package gateway uvicorn gateway.main:app --host 0.0.0.0 --port 8000
 ```
 
 There are no tests or linting configured in this project.
