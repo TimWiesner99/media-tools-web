@@ -13,16 +13,16 @@
     <nav class="nav-inner">
       <a href="/" class="nav-brand">Media Tools</a>
       <div class="nav-links">
-        <a href="/green-to-red/" class="nav-link">Spotify to MP3</a>
-        <a href="/edl-to-archive/" class="nav-link" aria-current="page">EDL to Archive</a>
-        <a href="/yt-bulk-dl/" class="nav-link">YT Bulk DL</a>
-        {% if user is defined and user and user.role == "admin" %}
-        <a href="/admin/" class="nav-link">Admin</a>
+        <a href="/green-to-red/" role="button">Spotify to MP3</a>
+        <a href="/edl-to-archive/" role="button">EDL to Archive</a>
+        <a href="/yt-bulk-dl/" role="button">YT Bulk DL</a>
+        {% if request.headers.get("x-user-role") == "admin" %}
+        <a href="/admin/" role="button">Admin</a>
         {% endif %}
-        {% if user is defined and user %}
-        <a href="/account" class="nav-link">{{ user.username }}</a>
+        {% if request.headers.get("x-user-id") %}
+        <a href="/account" role="button">Settings</a>
         <form method="post" action="/logout" style="display:inline;margin:0">
-          <button type="submit" class="nav-link btn-logout">Sign Out</button>
+          <button type="submit">Sign Out</button>
         </form>
         {% endif %}
       </div>

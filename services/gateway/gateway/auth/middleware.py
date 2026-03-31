@@ -57,11 +57,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Attach user to request state for downstream gateway routes
         request.state.user = user
 
-        # Inject X-User-Id header so mounted sub-apps can identify the user
+        # Inject user headers so mounted sub-apps can identify the user
         # without sharing the gateway's session middleware
         scope = request.scope
         headers = list(scope.get("headers", []))
         headers.append((b"x-user-id", str(user.id).encode()))
+        headers.append((b"x-user-role", user.role.encode()))
         scope["headers"] = headers
 
         return await call_next(request)

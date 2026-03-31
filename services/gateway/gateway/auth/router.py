@@ -174,27 +174,22 @@ async def admin_create_user(
     # Validate username
     username = username.strip()
     if not username:
-        with get_db() as db:
-            users = db.query(User).order_by(User.created_at).all()
+        from gateway.admin import _admin_context, _get_all_settings
         return templates.TemplateResponse(
             request,
-            "admin/users.html",
-            {"users": users, "user": request.state.user, "error": "Username cannot be empty."},
+            "admin/index.html",
+            {**_admin_context(request), "error": "Username cannot be empty."},
             status_code=400,
         )
 
     with get_db() as db:
         existing = db.query(User).filter(User.username == username).first()
         if existing:
-            users = db.query(User).order_by(User.created_at).all()
+            from gateway.admin import _admin_context
             return templates.TemplateResponse(
                 request,
-                "admin/users.html",
-                {
-                    "users": users,
-                    "user": request.state.user,
-                    "error": f"Username '{username}' is already taken.",
-                },
+                "admin/index.html",
+                {**_admin_context(request), "error": f"Username '{username}' is already taken."},
                 status_code=400,
             )
 
@@ -208,7 +203,7 @@ async def admin_create_user(
         db.add(new_user)
         db.commit()
 
-    return RedirectResponse("/admin/users", status_code=303)
+    return RedirectResponse("/admin/", status_code=303)
 
 
 @router.post("/admin/users/{user_id}/delete")
@@ -224,4 +219,4 @@ async def admin_delete_user(request: Request, user_id: int):
         db.delete(user)
         db.commit()
 
-    return RedirectResponse("/admin/users", status_code=303)
+    return RedirectResponse("/admin/", status_code=303)

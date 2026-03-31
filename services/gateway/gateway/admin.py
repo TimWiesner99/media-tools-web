@@ -41,10 +41,15 @@ def _get_all_settings():
 async def admin_page(request: Request):
     _require_admin(request)
     return templates.TemplateResponse(
-        request,
-        "admin/index.html",
-        {"settings": _get_all_settings(), "user": request.state.user},
+        request, "admin/index.html", _admin_context(request),
     )
+
+
+def _admin_context(request: Request, **extra):
+    from gateway.auth.db import User, get_db
+    with get_db() as db:
+        users = db.query(User).order_by(User.created_at).all()
+    return {"settings": _get_all_settings(), "user": request.state.user, "users": users, **extra}
 
 
 @router.post("/settings/green-to-red")
@@ -60,9 +65,7 @@ async def update_green_to_red_settings(
         max_workers_global=max(1, min(100, max_workers_global)),
     )
     return templates.TemplateResponse(
-        request,
-        "admin/index.html",
-        {"settings": _get_all_settings(), "saved": "green_to_red", "user": request.state.user},
+        request, "admin/index.html", _admin_context(request, saved="green_to_red"),
     )
 
 
@@ -79,7 +82,5 @@ async def update_yt_bulk_dl_settings(
         max_workers_global=max(1, min(100, max_workers_global)),
     )
     return templates.TemplateResponse(
-        request,
-        "admin/index.html",
-        {"settings": _get_all_settings(), "saved": "yt_bulk_dl", "user": request.state.user},
+        request, "admin/index.html", _admin_context(request, saved="yt_bulk_dl"),
     )

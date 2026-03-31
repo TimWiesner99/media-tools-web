@@ -84,12 +84,12 @@
       <details style="margin-top:6px;">
         <summary style="cursor:pointer;font-size:11px;">Rule syntax</summary>
         <div class="win95-window" style="margin-top:4px;">
-          <div class="win95-window-content" style="font-size:11px;">
+          <div class="win95-window-content syntax-guide" style="font-size:11px;">
             <p><strong>Fields:</strong> <code>name</code>, <code>file_name</code> (or <code>Bestandsnaam</code>), <code>reel</code>, <code>track</code>, <code>comment</code></p>
             <p><strong>Operators:</strong> <code>IS</code> (exact match) · <code>INCLUDES</code> (substring)</p>
             <p><strong>Logic:</strong> <code>AND</code> · <code>OR</code> · <code>NOT</code> · <code>( )</code></p>
             <p>Lines are OR'd — any matching line excludes the entry.</p>
-            <pre style="background:var(--win95-input-bg);box-shadow:var(--sunken);padding:4px;font-size:10px;">file_name IS "" AND name INCLUDES ".MXF.SYNC"
+            <pre style="background:transparent;box-shadow:none;padding:4px;font-size:var(--text-xs);">file_name IS "" AND name INCLUDES ".MXF.SYNC"
 name INCLUDES "TEMP"
 (name INCLUDES "A0" OR name INCLUDES "B0") AND NOT comment INCLUDES "keep"</pre>
           </div>

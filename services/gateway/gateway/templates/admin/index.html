@@ -14,7 +14,98 @@
   <div class="win95-window-content">
 
     <p>Settings are stored in memory and reset on server restart.</p>
-    <p><a href="/admin/users">Manage Users</a></p>
+    <hr>
+
+    {# ── User Management ─────────────────────────────────────────────────── #}
+    <div class="win95-window" style="margin-bottom:8px;">
+      <div class="win95-title-bar">
+        <span class="win95-title-bar-icon">👥</span>
+        <span class="win95-title-bar-text">User Management</span>
+      </div>
+      <div class="win95-window-content">
+
+        {% if error %}
+        <div class="error-banner">{{ error }}</div>
+        {% endif %}
+
+        <div class="win95-window" style="margin-bottom:8px;">
+          <div class="win95-title-bar">
+            <span class="win95-title-bar-text">Users</span>
+          </div>
+          <div class="win95-window-content" style="padding:8px;">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Provider</th>
+                  <th>🔒</th>
+                  <th>Created</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for u in users %}
+                <tr>
+                  <td>{{ u.username }}</td>
+                  <td>{{ u.role }}</td>
+                  <td>{{ u.auth_provider }}</td>
+                  <td style="text-align:center;">{% if u.is_permanent %}🔒{% endif %}</td>
+                  <td>{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
+                  <td>
+                    {% if not u.is_permanent %}
+                    <form method="post" action="/admin/users/{{ u.id }}/delete" style="display:inline;margin:0"
+                          onsubmit="return confirm('Delete user \'{{ u.username }}\'?')">
+                      <button type="submit" style="min-width:55px;padding:1px 6px;font-size:10px;">Delete</button>
+                    </form>
+                    {% else %}
+                    <span style="color:var(--win95-text-dim);font-size:10px;">Protected</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align:center;color:var(--win95-text-dim);">No users found.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="win95-window">
+          <div class="win95-title-bar">
+            <span class="win95-title-bar-text">Create New User</span>
+          </div>
+          <div class="win95-window-content">
+            <form id="create-form" method="post" action="/admin/users/create"
+                  onsubmit="return hashNewUser(event)">
+              <input type="hidden" name="password_hash" id="new-user-pw-hash" />
+              <div class="form-grid">
+                <label>
+                  Username
+                  <input type="text" name="username" required />
+                </label>
+                <label>
+                  Password
+                  <input type="password" id="new-user-pw" required />
+                </label>
+                <label>
+                  Role
+                  <select name="role">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+              </div>
+              <div style="margin-top:8px;">
+                <button type="submit">Create User</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <hr>
 
     {# ── Spotify → MP3 settings ────────────────────────────────────────── #}
@@ -112,4 +203,19 @@
 
   </div>
 </div>
+
+<script>
+async function sha256hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function hashNewUser(event) {
+  event.preventDefault();
+  const pw = document.getElementById('new-user-pw').value;
+  document.getElementById('new-user-pw-hash').value = await sha256hex(pw);
+  document.getElementById('new-user-pw').value = '';
+  event.target.submit();
+  return false;
+}
+</script>
 {% endblock %}
