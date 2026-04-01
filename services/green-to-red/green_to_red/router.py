@@ -118,8 +118,10 @@ async def job_fragment(request: Request, job_id: str):
     job = get_job(job_id)
     if job is None:
         return JSONResponse({"error": "Job not found."}, status_code=404)
-    fragment_url = str(request.url_for("job_fragment", job_id=job_id))
-    download_url = str(request.url_for("job_download", job_id=job_id))
+    fragment_url = request.url_for("job_fragment", job_id=job_id).path
+    download_url = request.url_for("job_download", job_id=job_id).path
+    # HTTP 286 tells HTMX to swap the content AND stop polling
+    status_code = 286 if job.status in ("done", "error") else 200
     return _templates(request).TemplateResponse(
         request, "green_to_red/_status_fragment.html",
         {
@@ -129,6 +131,7 @@ async def job_fragment(request: Request, job_id: str):
             "elapsed": _elapsed(job),
             "activity_log": job.get_activity_log(),
         },
+        status_code=status_code,
     )
 
 
