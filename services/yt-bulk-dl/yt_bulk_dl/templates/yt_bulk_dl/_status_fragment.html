@@ -6,11 +6,9 @@
                     else ("active" if job.phase == "download" else "pending") %}
 
 <div id="status-panel"
-  {% if job.status not in ("done","error") %}
-    hx-get="{{ fragment_url }}"
-    hx-trigger="every 3s"
-    hx-swap="outerHTML"
-  {% endif %}
+  hx-get="{{ fragment_url }}"
+  hx-trigger="every 3s"
+  hx-swap="outerHTML"
 >
 
 {% if job.status == "error" %}
