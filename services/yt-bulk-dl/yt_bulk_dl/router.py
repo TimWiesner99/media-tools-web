@@ -32,7 +32,7 @@ async def form(request: Request):
     active = get_active_job_for_user(user_id)
     if active is not None:
         return RedirectResponse(
-            url=request.url_for("job_page", job_id=active.job_id), status_code=302
+            url=request.url_for("ytdl_job_page", job_id=active.job_id), status_code=302
         )
     return _templates(request).TemplateResponse(request, "yt_bulk_dl/form.html")
 
@@ -60,11 +60,11 @@ async def start_convert(
     job = create_job(urls, prefix=prefix_val, max_length=max_length, user_id=user_id)
     await launch_job(job.job_id, urls)
     return RedirectResponse(
-        url=request.url_for("job_page", job_id=job.job_id).path, status_code=303
+        url=request.url_for("ytdl_job_page", job_id=job.job_id).path, status_code=303
     )
 
 
-@router.get("/convert/{job_id}", name="job_page")
+@router.get("/convert/{job_id}", name="ytdl_job_page")
 async def job_page(request: Request, job_id: str):
     job = get_job(job_id)
     if job is None:
@@ -73,23 +73,23 @@ async def job_page(request: Request, job_id: str):
             {"error": "Job not found. It may have expired."},
             status_code=404,
         )
-    fragment_url = request.url_for("job_fragment", job_id=job_id).path
-    download_url = request.url_for("job_download", job_id=job_id).path
+    fragment_url = request.url_for("ytdl_job_fragment", job_id=job_id).path
+    download_url = request.url_for("ytdl_job_download", job_id=job_id).path
     return _templates(request).TemplateResponse(
         request, "yt_bulk_dl/job_status.html",
         {"job": job, "fragment_url": fragment_url, "download_url": download_url},
     )
 
 
-@router.get("/convert/{job_id}/fragment", name="job_fragment")
+@router.get("/convert/{job_id}/fragment", name="ytdl_job_fragment")
 async def job_fragment(request: Request, job_id: str):
     """HTML partial for HTMX polling. Touching the job resets the 30-min timer."""
     job = get_job(job_id)
     if job is None:
         return JSONResponse({"error": "Job not found."}, status_code=404)
     touch_job(job_id)
-    fragment_url = request.url_for("job_fragment", job_id=job_id).path
-    download_url = request.url_for("job_download", job_id=job_id).path
+    fragment_url = request.url_for("ytdl_job_fragment", job_id=job_id).path
+    download_url = request.url_for("ytdl_job_download", job_id=job_id).path
     # HTTP 286 tells HTMX to swap the content AND stop polling
     status_code = 286 if job.status in ("done", "error") else 200
     return _templates(request).TemplateResponse(
@@ -99,7 +99,7 @@ async def job_fragment(request: Request, job_id: str):
     )
 
 
-@router.get("/convert/{job_id}/download", name="job_download")
+@router.get("/convert/{job_id}/download", name="ytdl_job_download")
 async def job_download(job_id: str):
     job = get_job(job_id)
     if job is None or job.status != "done":
