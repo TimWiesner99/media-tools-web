@@ -34,6 +34,11 @@ def _get_all_settings():
         settings["yt_bulk_dl"] = ytdl_settings()
     except ImportError:
         pass
+    try:
+        from edl_to_archive.settings import get_settings as edl_settings
+        settings["edl_to_archive"] = edl_settings()
+    except ImportError:
+        pass
     return settings
 
 
@@ -85,4 +90,19 @@ async def update_yt_bulk_dl_settings(
     )
     return templates.TemplateResponse(
         request, "admin/index.html", _admin_context(request, saved="yt_bulk_dl"),
+    )
+
+
+@router.post("/settings/edl-to-archive")
+async def update_edl_to_archive_settings(
+    request: Request,
+    min_match_length: int = Form(...),
+):
+    _require_admin(request)
+    from edl_to_archive.settings import update_settings
+    update_settings(
+        min_match_length=max(2, min(20, min_match_length)),
+    )
+    return templates.TemplateResponse(
+        request, "admin/index.html", _admin_context(request, saved="edl_to_archive"),
     )

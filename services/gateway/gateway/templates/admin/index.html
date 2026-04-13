@@ -203,10 +203,37 @@
       </div>
     </div>
 
-    {# ── EDL to Archive — no server settings ─────────────────────────── #}
-    <div class="win95-window muted-article">
+    {# ── EDL to Archive settings ────────────────────────────────────── #}
+    <div class="win95-window" style="margin-bottom:8px;">
       <div class="win95-title-bar">
-        <span class="win95-title-bar-text">EDL to Archive — No Server Settings</span>
+        <span class="win95-title-bar-text">EDL to Archive — Matching Settings</span>
+      </div>
+      <div class="win95-window-content">
+
+        {% if saved == "edl_to_archive" %}
+        <div class="success-banner">Settings saved.</div>
+        {% endif %}
+
+        {% if settings.edl_to_archive is defined %}
+        <form method="post" action="/admin/settings/edl-to-archive">
+          <div class="form-grid">
+            <label>
+              Min match length <span class="tooltip-icon" data-tooltip="Minimum number of characters (after stripping extensions) for a truncated filename to be considered a prefix match. Single-character source names are always ignored.">?</span>
+              <input
+                type="number"
+                name="min_match_length"
+                value="{{ settings.edl_to_archive.min_match_length }}"
+                min="2" max="20"
+              />
+            </label>
+          </div>
+          <div style="margin-top:8px;">
+            <button type="submit">Apply</button>
+          </div>
+        </form>
+        {% else %}
+        <p style="color:var(--win95-text-dim);">Service unavailable.</p>
+        {% endif %}
       </div>
     </div>
 

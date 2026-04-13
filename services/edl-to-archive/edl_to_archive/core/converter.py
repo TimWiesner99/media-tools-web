@@ -684,7 +684,9 @@ def find_source_match(
 ) -> Optional[SourceEntry]:
     """Find a matching source entry for an EDL entry name.
 
-    Uses normalized name matching to handle file extensions and case differences.
+    Uses a two-pass approach: first tries exact matches (after normalizing
+    extensions and case), then falls back to prefix matching for truncated
+    titles.  Single-character source names are always skipped (markers).
 
     Args:
         edl_name: Name from the EDL entry
@@ -693,17 +695,26 @@ def find_source_match(
     Returns:
         Matching SourceEntry or None if not found
     """
+    from edl_to_archive.settings import get_settings
+    min_len = get_settings().min_match_length
+
     normalized_edl = normalize_name(edl_name)
 
+    # Pass 1: exact match (skip single-char source names — always markers)
     for source in sources:
         normalized_source = normalize_name(source.name)
-
-        # Exact match after normalization
+        if len(normalized_source) <= 1:
+            continue
         if normalized_edl == normalized_source:
             return source
 
-        # Check if one contains the other (for partial matches)
-        if normalized_edl in normalized_source or normalized_source in normalized_edl:
+    # Pass 2: prefix match (handles truncated titles in either direction)
+    for source in sources:
+        normalized_source = normalize_name(source.name)
+        shorter = min(len(normalized_edl), len(normalized_source))
+        if shorter < min_len:
+            continue
+        if normalized_edl.startswith(normalized_source) or normalized_source.startswith(normalized_edl):
             return source
 
     return None
