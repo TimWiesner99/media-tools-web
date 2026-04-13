@@ -34,11 +34,15 @@
           {{ done_n }} / {{ job.video_states | length }} downloaded
           {%- if error_n %} · {{ error_n }} failed{% endif %}
         </p>
+        {% if job.phase == "done" %}
+        <p><a href="{{ file_download_base }}metadata.csv" role="button" class="btn-small">Download metadata.csv</a></p>
+        {% endif %}
         <table class="track-table">
           <thead>
             <tr>
               <th>Video</th>
               <th title="Status">DL</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -53,6 +57,11 @@
                 {%- elif vs.status == "error"      %}✗
                 {%- elif vs.status == "downloading"%}⟳
                 {%- else                           %}—{% endif %}
+              </td>
+              <td class="track-action-cell">
+                {% if vs.status == "done" and vs.filename %}
+                  <a href="{{ file_download_base }}{{ vs.filename | urlencode }}" class="btn-small" title="Download {{ vs.filename }}">💾</a>
+                {% endif %}
               </td>
             </tr>
             {% endfor %}
@@ -74,7 +83,17 @@
       ({{ job.error_count }} failed)
     {% endif %}
   </p>
-  <a href="{{ download_url }}" role="button">Download ZIP</a>
+  {% if zip_parts | length == 1 %}
+    <a href="{{ download_url }}" role="button">Download ZIP</a>
+  {% elif zip_parts | length > 1 %}
+    {% for part in zip_parts %}
+      {% if part.is_standalone %}
+        <a href="{{ download_url }}/{{ part.part_number }}" role="button">Download {{ part.filename }}</a>
+      {% else %}
+        <a href="{{ download_url }}/{{ part.part_number }}" role="button">Download Part {{ part.part_number }}</a>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
   <a href="/yt-bulk-dl/" role="button" class="btn-secondary">Download more</a>
 </div>
 {% endif %}

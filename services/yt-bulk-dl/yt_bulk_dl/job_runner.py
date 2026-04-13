@@ -1,7 +1,7 @@
 """In-memory job store for yt-bulk-dl downloads."""
 
 import asyncio
-import io
+import json
 import shutil
 import tempfile
 import threading
@@ -181,16 +181,153 @@ async def launch_job(job_id: str, urls: list[str]) -> None:
     loop.run_in_executor(_executor, _run_job, job, urls)
 
 
-def build_zip(job: Job) -> io.BytesIO:
-    buf = io.BytesIO()
+@dataclass
+class ZipPart:
+    path: Path
+    part_number: int
+    is_standalone: bool
+    filename: str
+
+
+def get_zip_parts(job: Job) -> list[ZipPart]:
+    """Build chunked zip files on disk and return the part manifest.
+
+    Idempotent: if the manifest already exists, just reads it back.
+    Thread-safe via job._lock.
+    """
     if job.output_dir is None or not job.output_dir.exists():
-        return buf
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        for file in sorted(job.output_dir.iterdir()):
-            if file.suffix.lower() in (".mp4", ".srt", ".csv"):
-                zf.write(file, file.name)
-    buf.seek(0)
-    return buf
+        return []
+
+    manifest_path = job.output_dir / "_parts.json"
+
+    with job._lock:
+        # Return cached manifest if already built
+        if manifest_path.exists():
+            data = json.loads(manifest_path.read_text(encoding="utf-8"))
+            return [
+                ZipPart(
+                    path=job.output_dir / d["path"],
+                    part_number=d["part_number"],
+                    is_standalone=d["is_standalone"],
+                    filename=d["filename"],
+                )
+                for d in data
+            ]
+
+        settings = get_settings()
+        max_bytes = settings.max_zip_size_mb * 1024 * 1024
+
+        # Collect downloadable files (exclude internal _parts.json / _part*.zip)
+        media_files: list[Path] = []
+        metadata_file: Path | None = None
+        for f in sorted(job.output_dir.iterdir()):
+            if f.name.startswith("_"):
+                continue
+            if f.suffix.lower() in (".mp4", ".srt", ".csv"):
+                if f.name == "metadata.csv":
+                    metadata_file = f
+                else:
+                    media_files.append(f)
+
+        if not media_files:
+            return []
+
+        metadata_size = metadata_file.stat().st_size if metadata_file else 0
+        prefix = job.prefix or "videos"
+
+        # Group files into chunks
+        chunks: list[list[Path]] = []  # each inner list is files for one zip
+        standalone: list[Path] = []     # oversized files served as-is
+        current_chunk: list[Path] = []
+        current_size = metadata_size  # metadata goes in every chunk
+
+        for f in media_files:
+            fsize = f.stat().st_size
+            # Single file exceeds limit -> standalone
+            if fsize > max_bytes:
+                # Flush current chunk first
+                if current_chunk:
+                    chunks.append(current_chunk)
+                    current_chunk = []
+                    current_size = metadata_size
+                standalone.append(f)
+                continue
+            # Would exceed limit -> start new chunk
+            if current_chunk and current_size + fsize > max_bytes:
+                chunks.append(current_chunk)
+                current_chunk = []
+                current_size = metadata_size
+            current_chunk.append(f)
+            current_size += fsize
+
+        if current_chunk:
+            chunks.append(current_chunk)
+
+        # Build zip files on disk
+        parts: list[ZipPart] = []
+        part_num = 0
+        total_parts = len(chunks) + len(standalone)
+
+        for chunk_files in chunks:
+            part_num += 1
+            if total_parts == 1:
+                zip_name = f"_part1.zip"
+                dl_filename = f"{prefix}_videos.zip"
+            else:
+                zip_name = f"_part{part_num}.zip"
+                dl_filename = f"{prefix}_videos_part{part_num}.zip"
+
+            zip_path = job.output_dir / zip_name
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                if metadata_file:
+                    zf.write(metadata_file, metadata_file.name)
+                for f in chunk_files:
+                    zf.write(f, f.name)
+
+            parts.append(ZipPart(
+                path=zip_path,
+                part_number=part_num,
+                is_standalone=False,
+                filename=dl_filename,
+            ))
+
+        for sf in standalone:
+            part_num += 1
+            parts.append(ZipPart(
+                path=sf,
+                part_number=part_num,
+                is_standalone=True,
+                filename=sf.name,
+            ))
+
+        # Write manifest
+        manifest_data = [
+            {
+                "path": p.path.name,
+                "part_number": p.part_number,
+                "is_standalone": p.is_standalone,
+                "filename": p.filename,
+            }
+            for p in parts
+        ]
+        manifest_path.write_text(json.dumps(manifest_data), encoding="utf-8")
+
+        return parts
+
+
+def get_file_path(job: Job, filename: str) -> Path | None:
+    """Return the full path for a file in the job output dir, or None if invalid."""
+    if job.output_dir is None or not job.output_dir.exists():
+        return None
+    if ".." in filename or "/" in filename or "\\" in filename:
+        return None
+    allowed_ext = {".mp4", ".srt", ".csv"}
+    path = job.output_dir / filename
+    if path.suffix.lower() not in allowed_ext:
+        return None
+    if not path.exists():
+        return None
+    return path
 
 
 async def cleanup_old_jobs(max_age_minutes: int = 30) -> None:

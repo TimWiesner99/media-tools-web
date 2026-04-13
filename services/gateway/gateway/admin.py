@@ -74,12 +74,14 @@ async def update_yt_bulk_dl_settings(
     request: Request,
     max_workers_per_job: int = Form(...),
     max_workers_global: int = Form(...),
+    max_zip_size_mb: int = Form(...),
 ):
     _require_admin(request)
     from yt_bulk_dl.settings import update_settings
     update_settings(
         max_workers_per_job=max(1, min(20, max_workers_per_job)),
         max_workers_global=max(1, min(100, max_workers_global)),
+        max_zip_size_mb=max(100, min(10240, max_zip_size_mb)),
     )
     return templates.TemplateResponse(
         request, "admin/index.html", _admin_context(request, saved="yt_bulk_dl"),

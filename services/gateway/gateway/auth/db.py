@@ -13,7 +13,7 @@ from pathlib import Path
 from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-_DATA_DIR = Path(os.environ.get("MEDIA_TOOLS_DATA", Path.home() / ".media-tools"))
+_DATA_DIR = Path(os.environ.get("MEDIA_TOOLS_DATA", Path.home() / ".media-tools")).expanduser()
 _DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = _DATA_DIR / "auth.db"
 

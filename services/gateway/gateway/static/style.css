@@ -474,6 +474,22 @@ button:disabled {
   background: var(--win95-bg);
 }
 
+/* Small inline button (e.g. per-row download) */
+.btn-small {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 11px;
+  min-width: auto;
+  min-height: auto;
+  text-decoration: none;
+}
+
+.track-action-cell {
+  width: 30px;
+  text-align: center;
+  white-space: nowrap;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    TOOL GRID (home page icon grid)
    ═══════════════════════════════════════════════════════════════════════════ */

@@ -17,7 +17,7 @@ from pathlib import Path
 
 from fastapi import Request
 
-_DATA_DIR = Path(os.environ.get("MEDIA_TOOLS_DATA", Path.home() / ".media-tools")) / "edl_sessions"
+_DATA_DIR = Path(os.environ.get("MEDIA_TOOLS_DATA", Path.home() / ".media-tools")).expanduser() / "edl_sessions"
 
 DEFAULT_EXCLUSION_RULES = """\
 # Exclude MXF SYNC files
