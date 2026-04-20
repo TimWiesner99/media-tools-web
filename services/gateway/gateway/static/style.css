@@ -108,9 +108,19 @@ hr {
   text-decoration: none;
   white-space: nowrap;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .nav-brand:hover { color: #fff; text-decoration: none; }
+
+/* VPRO logo in the nav bar — sized to match the text height, tinted white */
+.nav-logo {
+  height: 20px;
+  width: auto;
+  filter: brightness(0) invert(1);
+}
 
 /* Nav link buttons row */
 .nav-links {
@@ -146,13 +156,24 @@ main.page-container.login-main {
 }
 
 footer.page-container {
-  padding: 6px 12px;
+  padding: 12px;
   background: none;
   border: none;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 
 footer small { color: rgba(255,255,255,0.5); }
+
+/* Medialab logo in the footer — tinted to match the muted footer text */
+.footer-logo {
+  height: 28px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  opacity: 0.5;
+}
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -163,7 +184,6 @@ footer small { color: rgba(255,255,255,0.5); }
   border: 1px solid var(--border);
   border-radius: 6px;
   margin-bottom: 12px;
-  overflow: hidden;
 }
 
 /* Panel within a panel (e.g. admin sub-sections, account change-password) */
@@ -171,22 +191,29 @@ footer small { color: rgba(255,255,255,0.5); }
   border-radius: 4px;
 }
 
-/* Coloured title strip at the top of a panel */
+/* Coloured title strip at the top of a panel.
+   Border-radius matches the panel so the background clips into the corners. */
 .panel-header {
   background: var(--color-1);
   color: #fff;
   font-weight: 600;
   font-size: 0.95rem;
   padding: 6px 12px;
+  border-radius: 5px 5px 0 0;
 }
 
-/* Headers of panels within panels */ 
-.panel .panel .panel-header{
+.panel .panel .panel-header {
+  border-radius: 3px 3px 0 0;
+}
+
+/* Headers of panels within panels */
+.panel .panel .panel-header {
   background: var(--color-5);
   color: var(--color-4);
   font-weight: 400;
   font-size: 0.85rem;
   padding: 4px 8px;
+  border-radius: 3px 3px 0 0;
 }
 
 /* Main content area of a panel */
@@ -289,30 +316,36 @@ form {
   gap: 10px;
 }
 
-/* e.g. "Spotify URL", "YouTube URLs", "EDL file" */
+/* e.g. "Spotify URL", "YouTube URLs", "EDL file"
+   Row-wrap so the label text + tooltip badge stay on one line,
+   while the input wraps to its own full-width row below. */
 label {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 4px;
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text);
-  gap: 4px;
-  position: relative;
-  padding-right: 22px;
+}
+
+/* Non-checkbox inputs fill their own full-width row below the label text */
+label > input:not([type="checkbox"]),
+label > select,
+label > textarea {
+  flex: 0 0 100%;
 }
 
 /* Checkbox labels (e.g. "Collapse consecutive entries" in EDL form) */
 label:has(input[type="checkbox"]) {
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
   cursor: pointer;
-  padding-right: 0;
   font-weight: normal;
 }
 
 label:has(input[type="checkbox"]) input {
-  flex-shrink: 0;
+  flex: 0 0 auto;
   width: 14px;
   height: 14px;
   cursor: pointer;
@@ -321,7 +354,6 @@ label:has(input[type="checkbox"]) input {
 /* Used on the exclusion-rules label in EDL form to make it block-level */
 .label-block {
   display: block;
-  padding-right: 22px;
 }
 
 input[type="text"],
@@ -546,9 +578,7 @@ details > *:not(summary) {
    TOOLTIP  (? badge on form labels — admin settings, EDL form, YT bulk-dl)
    ═══════════════════════════════════════════════════════════════════════════ */
 .tooltip-icon {
-  position: absolute;
-  top: 0;
-  right: 0;
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -588,22 +618,6 @@ details > *:not(summary) {
 }
 
 .tooltip-icon:hover::after { opacity: 1; }
-
-/* Tooltip on a label is positioned absolute within the label */
-label > .tooltip-icon {
-  position: absolute;
-  top: 0;
-  right: 0;
-}
-
-/* Tooltip outside a label (e.g. inline in form-grid) */
-label .tooltip-icon {
-  position: relative;
-  top: auto;
-  right: auto;
-  flex-shrink: 0;
-  vertical-align: middle;
-}
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
