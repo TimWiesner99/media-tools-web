@@ -5,20 +5,15 @@
 {% endblock %}
 
 {% block content %}
-<div class="win95-window">
-  <div class="win95-title-bar">
-    <span class="win95-title-bar-icon">🎵</span>
-    <span class="win95-title-bar-text">
-      {% if job.status == "done" %}Download Ready
-      {% elif job.status == "error" %}Conversion Failed
-      {% else %}Converting…
-      {% endif %} — Spotify → MP3
-    </span>
-    <div class="win95-title-bar-buttons">
-      <span>_</span><span>□</span><span>×</span>
-    </div>
+<div class="panel">
+  <div class="panel-header">
+    🎵
+    {% if job.status == "done" %}Download Ready
+    {% elif job.status == "error" %}Conversion Failed
+    {% else %}Converting…
+    {% endif %} — Spotify → MP3
   </div>
-  <div class="win95-window-content">
+  <div class="panel-body">
     {% include "green_to_red/_status_fragment.html" %}
   </div>
 </div>

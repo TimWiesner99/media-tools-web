@@ -1,70 +1,24 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   WINDOWS 95 — DESIGN TOKENS
-   All colors declared here. Change these to retheme the entire app.
+   COLOUR PALETTE
+   Change these variables to retheme the entire site.
    ═══════════════════════════════════════════════════════════════════════════ */
 :root {
-  /* Core palette */
-  --win95-desktop:      #008080;
-  --win95-gray:         #C0C0C0;
-  --win95-gray-light:   #DFDFDF;
-  --win95-gray-dark:    #808080;
-  --win95-gray-darker:  #404040;
-  --win95-white:        #FFFFFF;
-  --win95-black:        #000000;
+  /* 5 accent colours */
+  --color-1: #1446A0;   /* nav bar, panel headers, focus rings */
+  --color-2: #306B34;   /* success states, done step markers */
+  --color-3: #DD0426;   /* error / danger states */
+  --color-4: #2F1B25;   /* warning, active pipeline step */
+  --color-5: #F3FFC6;   /* muted borders, dim text, alternating rows */
 
-  /* Window chrome */
-  --win95-title-bg:     #000080;
-  --win95-title-text:   #FFFFFF;
-  --win95-title-grad:   #1084d0;
+  /* Backgrounds */
+  --bg-dark:  #1c1c2e;  /* page body background */
+  --bg-light: #ffffff;  /* panels, inputs, content areas */
 
-  /* Content */
-  --win95-bg:           #C0C0C0;
-  --win95-input-bg:     #FFFFFF;
-  --win95-text:         #000000;
-  --win95-text-dim:     #808080;
-  --win95-text-disabled:#808080;
-
-  /* Status */
-  --win95-success:      #008000;
-  --win95-success-bg:   #CCFFCC;
-  --win95-error:        #CC0000;
-  --win95-error-bg:     #FFCCCC;
-  --win95-warning-bg:   #FFFCCC;
-
-  /* Links */
-  --win95-link:         #0000EE;
-  --win95-link-visited: #FFFFFF;
-
-  /* Border edges for 3D bevel effect */
-  --win95-edge-light:   #FFFFFF;
-  --win95-edge-mid:     #DFDFDF;
-  --win95-edge-dark:    #808080;
-  --win95-edge-darker:  #404040;
-
-  /* Raised element (button, panel, window) */
-  --raised: inset -1px -1px 0 var(--win95-edge-darker),
-            inset  1px  1px 0 var(--win95-edge-light),
-            inset -2px -2px 0 var(--win95-edge-dark),
-            inset  2px  2px 0 var(--win95-edge-mid);
-
-  /* Sunken element (input, status area) */
-  --sunken: inset  1px  1px 0 var(--win95-edge-darker),
-            inset -1px -1px 0 var(--win95-edge-light),
-            inset  2px  2px 0 var(--win95-edge-dark),
-            inset -2px -2px 0 var(--win95-edge-mid);
-
-  /* Pressed button */
-  --pressed: inset 1px 1px 0 var(--win95-edge-darker),
-             inset -1px -1px 0 var(--win95-edge-light);
-
-  /* Typography tokens */
-  --text-2xs:  8px;
-  --text-xxs:  9px;
-  --text-xs:   10px;
-  --text-sm:   11px;
-  --text-base: 14px;
-  --text-lg:   15px;
-  --text-xl:   18px;
+  /* Derived aliases — do not hardcode these values elsewhere */
+  --text:       #1a1a2a;
+  --text-muted: #6c757d;
+  --border:     #dee2e6;
+  --bg-subtle:  #f8f9fa;  /* table alternating rows, panel sub-headers */
 }
 
 
@@ -78,273 +32,284 @@
 }
 
 html {
-  font-size: var(--text-sm);
-  -webkit-font-smoothing: none;
-  -moz-osx-font-smoothing: unset;
-  image-rendering: pixelated;
+  font-size: 14px;
 }
 
 body {
-  font-family: "Pixelated MS Sans Serif", "MS Sans Serif", Arial, sans-serif;
-  font-size: var(--text-base);
-  line-height: 1.4;
-  background-color: var(--win95-desktop);
-  color: var(--win95-text);
+  font-family: system-ui, -apple-system, Arial, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  background-color: var(--bg-dark);
+  color: var(--text);
   min-height: 100vh;
 }
 
 a {
-  color: var(--win95-link);
+  color: var(--color-1);
   text-decoration: underline;
 }
 
-a:visited { color: var(--win95-link-visited); }
-a:hover   { text-decoration: underline; }
+a:hover { text-decoration: none; }
 
 h1, h2, h3, h4 {
-  font-family: "w95faregular", "Pixelated MS Sans Serif", Arial, sans-serif;
-  font-weight: bold;
-  color: var(--win95-text);
+  font-weight: 600;
+  color: var(--text);
 }
 
-h1 { font-size: var(--text-xl); margin-bottom: 12px; }
-h2 { font-size: var(--text-lg); margin-bottom: 10px; }
-h3 { font-size: var(--text-base); margin-bottom: 8px; }
-h4 { font-size: var(--text-base); margin-bottom: 8px; }
+h1 { font-size: 1.4rem; margin-bottom: 12px; }
+h2 { font-size: 1.2rem; margin-bottom: 10px; }
+h3 { font-size: 1rem;   margin-bottom: 8px; }
+h4 { font-size: 1rem;   margin-bottom: 4px; }
 
-p  { font-size: var(--text-sm); margin-bottom: 8px; line-height: 1.5; color: var(--win95-text); }
+p { margin-bottom: 8px; }
 p:last-child { margin-bottom: 0; }
 
-small { font-size: var(--text-xs); color: var(--win95-text-dim); }
+small { font-size: 0.8rem; color: var(--text-muted); }
 
+/* e.g. exclusion rules textarea, syntax guide code blocks */
 code, pre {
   font-family: "Courier New", Courier, monospace;
-  font-size: var(--text-sm);
-  background: var(--win95-input-bg);
-  box-shadow: var(--sunken);
-  padding: 2px 4px;
+  font-size: 0.85rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  padding: 2px 5px;
+  border-radius: 3px;
 }
 
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 10px 0;
+}
+
+
 /* ═══════════════════════════════════════════════════════════════════════════
-   NAVIGATION BAR (Win95 title bar style)
+   NAVIGATION (top bar on every page)
    ═══════════════════════════════════════════════════════════════════════════ */
 .nav-wrap {
-  background: linear-gradient(to right, var(--win95-title-bg), var(--win95-title-grad));
-  padding: 0;
+  background: var(--color-1);
 }
 
 .nav-inner {
   max-width: 960px;
   margin: 0 auto;
-  padding: 3px 6px;
-  min-height: 28px;
+  padding: 6px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
+/* "Media Tools" brand link */
 .nav-brand {
-  font-family: "Pixelated MS Sans Serif", "MS Sans Serif", Arial, sans-serif;
-  font-size: var(--text-base);
-  font-weight: bold;
-  color: var(--win95-title-text);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
   text-decoration: none;
   white-space: nowrap;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
-.nav-brand::before {
-  content: "🖥";
-  font-size: var(--text-base);
-}
+.nav-brand:hover { color: #fff; text-decoration: none; }
 
-.nav-brand:hover { color: var(--win95-title-text); text-decoration: none; }
-
+/* Nav link buttons row */
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
+/* Sign-out form sits inline with the other nav links */
+.nav-links .form-inline {
+  display: inline;
+  margin: 0;
+}
+
+
 /* ═══════════════════════════════════════════════════════════════════════════
-   LAYOUT — page window
+   LAYOUT
    ═══════════════════════════════════════════════════════════════════════════ */
 .page-container {
   max-width: 900px;
-  margin: 12px auto;
-  padding: 0 8px;
+  margin: 16px auto;
+  padding: 0 12px;
 }
 
-main.page-container {
-  background: var(--win95-bg);
-  box-shadow: var(--raised);
-  padding: 0;
-  margin-top: 12px;
-  margin-bottom: 12px;
-}
-
-/* Win95 window title bar for main content area */
-main.page-container::before {
-  content: attr(data-title);
-  display: none; /* title bar is in the nav */
-}
-
-/* Inner content padding */
-main.page-container > *:not(.win95-title-bar) {
-  padding: 12px 16px;
-}
-
-/* Special: when main has a direct win95-window child, no extra padding */
-main.page-container.bare {
-  padding: 12px 16px;
+/* e.g. login page — transparent bg, centred content */
+main.page-container.login-main {
+  background: transparent;
+  border: none;
+  display: flex;
+  justify-content: center;
+  padding-top: 48px;
 }
 
 footer.page-container {
-  padding: 4px 8px;
+  padding: 6px 12px;
   background: none;
-  box-shadow: none;
+  border: none;
+  text-align: center;
 }
 
-footer small {
-  color: var(--win95-title-text);
-  font-size: var(--text-xs);
-}
+footer small { color: rgba(255,255,255,0.5); }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   WIN95 WINDOW COMPONENT
+   PANEL  (replaces .win95-window / .win95-title-bar / .win95-window-content)
+   Used on every page as the primary content card.
    ═══════════════════════════════════════════════════════════════════════════ */
-.win95-window {
-  background: var(--win95-bg);
-  box-shadow: var(--raised);
-  margin-bottom: 8px;
-}
-
-.win95-title-bar {
-  background: linear-gradient(to right, var(--win95-title-bg), var(--win95-title-grad));
-  color: var(--win95-title-text);
-  font-family: "w95faregular", "Pixelated MS Sans Serif", Arial, sans-serif;
-  font-weight: bold;
-  font-size: var(--text-base);
-  padding: 3px 6px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  user-select: none;
-}
-
-.win95-title-bar-icon {
-  font-size: var(--text-base);
-  line-height: 1;
-}
-
-.win95-title-bar-text {
-  flex: 1;
-  white-space: nowrap;
+.panel {
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 12px;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.win95-title-bar-buttons {
+/* Panel within a panel (e.g. admin sub-sections, account change-password) */
+.panel .panel {
+  border-radius: 4px;
+}
+
+/* Coloured title strip at the top of a panel */
+.panel-header {
+  background: var(--color-1);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 6px 12px;
+}
+
+/* Main content area of a panel */
+.panel-body {
+  padding: 16px;
   display: flex;
-  gap: 2px;
-  flex-shrink: 0;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.win95-title-bar-buttons span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 14px;
-  background: var(--win95-bg);
-  color: var(--win95-text);
-  font-size: var(--text-xxs);
-  box-shadow: var(--raised);
-  cursor: default;
-  font-weight: bold;
+/* Tighter padding for nested panels (e.g. users table wrapper in admin) */
+.panel .panel .panel-body {
+  padding: 8px;
 }
 
-.win95-window-content {
-  padding: 12px 16px;
-}
+/* No extra gap on deeply nested panel-bodies */
+.panel-body .panel-body { gap: 8px; }
+
+/* Details inside a panel-body needs a little breathing room */
+.panel-body details { margin-top: 4px; }
+
+/* A nested panel inside a details element */
+details .panel { margin-top: 4px; }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CARDS (article) — Win95 group box / panel
+   HOME PAGE — tool grid
+   Each tool card on the home page (index.html)
    ═══════════════════════════════════════════════════════════════════════════ */
-article {
-  background: var(--win95-bg);
-  box-shadow: var(--raised);
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* Icon + label area inside each tool card */
+.tool-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px 8px;
+  text-align: center;
+}
+
+.tool-icon svg,
+.tool-icon img {
+  width: 32px;
+  height: 32px;
+}
+
+/* Bold label below the icon (e.g. "Spotify to MP3") */
+.tool-icon-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Short description text below the icon area */
+.tool-desc {
+  padding: 0 10px 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  min-height: 32px;
+}
+
+/* Tool grid cards need their own flex column so footer sticks to bottom */
+.tool-grid .panel {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.tool-grid .panel .panel-body {
+  flex: 1;
   padding: 0;
-  margin-bottom: 8px;
+  gap: 0;
 }
 
-article header {
-  font-weight: bold;
-  font-size: var(--text-sm);
-  color: var(--win95-text);
-  padding: 4px 8px;
-  background: var(--win95-gray-light);
-  border-bottom: 1px solid var(--win95-edge-dark);
-}
-
-article > *:not(header):not(footer) {
+.tool-grid .panel > .panel-body + .panel-body,
+.tool-grid .panel > footer {
+  margin-top: auto;
   padding: 8px;
+  border-top: 1px solid var(--border);
 }
 
-article footer {
-  padding: 8px;
-  background: var(--win95-gray-light);
-  border-top: 1px solid var(--win95-edge-dark);
-}
-
-article.muted-article { opacity: 0.5; }
-
-/* Group box (fieldset-like) */
-.card {
-  background: var(--win95-bg);
-  box-shadow: var(--sunken);
-  padding: 8px;
-  margin-bottom: 8px;
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   FORM ELEMENTS
+   FORMS
    ═══════════════════════════════════════════════════════════════════════════ */
 form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
+/* e.g. "Spotify URL", "YouTube URLs", "EDL file" */
 label {
   display: flex;
   flex-direction: column;
-  font-size: var(--text-sm);
-  font-weight: normal;
-  color: var(--win95-text);
-  gap: 2px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  gap: 4px;
   position: relative;
-  padding-right: 20px;
+  padding-right: 22px;
 }
 
+/* Checkbox labels (e.g. "Collapse consecutive entries" in EDL form) */
 label:has(input[type="checkbox"]) {
   flex-direction: row;
   align-items: center;
   gap: 6px;
   cursor: pointer;
   padding-right: 0;
+  font-weight: normal;
 }
 
 label:has(input[type="checkbox"]) input {
   flex-shrink: 0;
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   cursor: pointer;
+}
+
+/* Used on the exclusion-rules label in EDL form to make it block-level */
+.label-block {
+  display: block;
+  padding-right: 22px;
 }
 
 input[type="text"],
@@ -355,16 +320,14 @@ input[type="password"],
 select,
 textarea {
   width: 100%;
-  padding: 2px 4px;
-  font-family: "Pixelated MS Sans Serif", "MS Sans Serif", Arial, sans-serif;
-  font-size: var(--text-sm);
-  color: var(--win95-text);
-  background: var(--win95-input-bg);
-  box-shadow: var(--sunken);
-  border: none;
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  border-radius: 4px;
   outline: none;
-  -webkit-appearance: none;
-  appearance: none;
 }
 
 input[type="text"]:focus,
@@ -374,43 +337,63 @@ input[type="email"]:focus,
 input[type="password"]:focus,
 select:focus,
 textarea:focus {
-  outline: 1px dotted var(--win95-black);
-  outline-offset: -2px;
+  border-color: var(--color-1);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-1) 20%, transparent);
 }
 
-select {
-  cursor: pointer;
-  padding-right: 16px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23000' d='M0 0l4 4 4-4z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 4px center;
-}
+select { cursor: pointer; }
 
 textarea {
   resize: vertical;
-  line-height: 1.4;
-  min-height: 60px;
+  line-height: 1.5;
+  min-height: 80px;
 }
 
+/* Exclusion rules textarea in EDL form */
 textarea.mono-textarea {
   font-family: "Courier New", Courier, monospace;
-  font-size: var(--text-sm);
+  font-size: 0.85rem;
 }
 
+/* e.g. EDL file, Source file uploads */
 input[type="file"] {
   width: 100%;
-  padding: 2px 4px;
-  font-family: "Pixelated MS Sans Serif", "MS Sans Serif", Arial, sans-serif;
-  font-size: var(--text-sm);
-  color: var(--win95-text);
-  background: var(--win95-bg);
-  box-shadow: var(--sunken);
-  border: none;
+  padding: 4px 6px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
   cursor: pointer;
 }
 
+/* 2-column form layout — EDL form options, admin settings, YT bulk-dl options */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: end;
+}
+
+/* Flex column cell for aligning checkboxes at the bottom of a grid cell */
+.form-col-end {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* Wrapper for submit / action buttons at the bottom of a form */
+.form-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+
 /* ═══════════════════════════════════════════════════════════════════════════
-   BUTTONS — Classic Win95 raised button
+   BUTTONS
+   One unified style. Use .btn-sm for compact table-cell buttons.
    ═══════════════════════════════════════════════════════════════════════════ */
 button,
 a[role="button"] {
@@ -418,246 +401,155 @@ a[role="button"] {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 3px 12px;
-  font-family: "Pixelated MS Sans Serif", "MS Sans Serif", Arial, sans-serif;
-  font-size: var(--text-sm);
-  font-weight: normal;
-  color: var(--win95-text);
-  background: var(--win95-bg);
-  box-shadow: var(--raised);
-  border: none;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 4px;
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
-  min-width: 75px;
-  min-height: 23px;
   -webkit-user-select: none;
   user-select: none;
 }
 
 button:hover,
 a[role="button"]:hover {
+  background: var(--border);
   text-decoration: none;
-  color: var(--win95-text);
-}
-
-button:active,
-a[role="button"]:active {
-  box-shadow: var(--pressed);
-  padding: 4px 11px 2px 13px;
+  color: var(--text);
 }
 
 button:focus,
 a[role="button"]:focus {
-  outline: 1px dotted var(--win95-black);
-  outline-offset: -4px;
+  outline: 2px solid var(--color-1);
+  outline-offset: 2px;
 }
 
 button:disabled {
-  color: var(--win95-text-disabled);
+  color: var(--text-muted);
   cursor: not-allowed;
-  text-shadow: 1px 1px 0 var(--win95-white);
+  opacity: 0.6;
 }
 
-/* Primary action button — slightly larger */
-.btn-action {
-  padding: 4px 16px;
-  min-width: 100px;
-  min-height: 26px;
-  font-weight: bold;
-  align-self: flex-start;
-}
-
-/* Secondary / cancel button */
-.btn-secondary {
-  color: var(--win95-text);
-  background: var(--win95-bg);
-}
-
-/* Small inline button (e.g. per-row download) */
-.btn-small {
-  display: inline-block;
-  padding: 1px 6px;
-  font-size: 11px;
+/* Small buttons inside table cells — e.g. per-row download in YT bulk-dl */
+.btn-sm {
+  padding: 2px 8px;
+  font-size: 0.78rem;
   min-width: auto;
-  min-height: auto;
-  text-decoration: none;
 }
 
-.track-action-cell {
-  width: 30px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   TOOL GRID (home page icon grid)
-   ═══════════════════════════════════════════════════════════════════════════ */
-.tool-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.tool-grid article {
-  margin-bottom: 0;
+/* Horizontal row of buttons — e.g. template download links in EDL form */
+.btn-row {
   display: flex;
-  flex-direction: column;
-  text-align: center;
-}
-
-.tool-grid article footer {
-  margin-top: auto;
-}
-
-.tool-icon {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   gap: 6px;
-  padding: 12px 8px 8px;
+  flex-wrap: wrap;
 }
 
-.tool-icon svg,
-.tool-icon img {
-  width: 32px;
-  height: 32px;
-  image-rendering: pixelated;
+/* Nav buttons — lighter style against the coloured nav bar */
+.nav-links a[role="button"],
+.nav-links button {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.25);
+  color: #fff;
+  padding: 3px 10px;
 }
 
-.tool-icon-label {
-  font-size: var(--text-sm);
-  font-weight: bold;
-  color: var(--win95-text);
+.nav-links a[role="button"]:hover,
+.nav-links button:hover {
+  background: rgba(255,255,255,0.28);
+  color: #fff;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   FORM GRID
-   ═══════════════════════════════════════════════════════════════════════════ */
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  align-items: end;
-}
-
-@media (max-width: 600px) {
-  .form-grid { grid-template-columns: 1fr; }
-  main.page-container { margin: 4px; }
-  .tool-grid { grid-template-columns: 1fr; }
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   STATUS BANNERS
+   FEEDBACK BANNERS & TEXT
+   error-banner: login errors, conversion errors
+   success-banner: EDL conversion complete, admin settings saved
    ═══════════════════════════════════════════════════════════════════════════ */
 .error-banner {
-  background: var(--win95-error-bg);
-  box-shadow: var(--sunken);
-  padding: 6px 8px;
-  font-size: var(--text-sm);
-  color: var(--win95-text);
-  margin-bottom: 8px;
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.error-banner::before {
-  content: "✖";
-  color: var(--win95-error);
-  font-weight: bold;
-  flex-shrink: 0;
-  font-size: var(--text-base);
-  line-height: 1;
+  background: color-mix(in srgb, var(--color-3) 10%, transparent);
+  border-left: 3px solid var(--color-3);
+  padding: 8px 10px;
+  font-size: 0.875rem;
+  border-radius: 0 4px 4px 0;
 }
 
 .success-banner {
-  background: var(--win95-success-bg);
-  box-shadow: var(--sunken);
-  padding: 6px 8px;
-  font-size: var(--text-sm);
-  color: var(--win95-text);
-  margin-bottom: 8px;
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
+  background: color-mix(in srgb, var(--color-2) 10%, transparent);
+  border-left: 3px solid var(--color-2);
+  padding: 8px 10px;
+  font-size: 0.875rem;
+  border-radius: 0 4px 4px 0;
 }
 
-.success-banner::before {
-  content: "✔";
-  color: var(--win95-success);
-  font-weight: bold;
-  flex-shrink: 0;
-  font-size: var(--text-base);
-  line-height: 1;
-}
+/* Inline coloured text — e.g. track status, step labels */
+.text-success { color: var(--color-2); font-weight: 600; }
+.text-error   { color: var(--color-3); }
 
-.text-success { color: var(--win95-success); font-weight: bold; }
-.text-error   { color: var(--win95-error); }
+/* Dimmed text — e.g. "Protected", "Service unavailable", SSO note */
+.text-muted   { color: var(--text-muted); font-size: 0.85rem; }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   DETAILS / SUMMARY
+   DETAILS / SUMMARY  (e.g. activity log, rule syntax guide in EDL form)
    ═══════════════════════════════════════════════════════════════════════════ */
 details {
-  background: var(--win95-bg);
-  box-shadow: var(--raised);
-  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
 }
 
 summary {
-  padding: 4px 8px;
-  font-size: var(--text-sm);
-  font-weight: bold;
-  color: var(--win95-text);
+  padding: 6px 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   user-select: none;
   list-style: none;
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: var(--win95-gray-light);
-  border-bottom: 1px solid var(--win95-edge-dark);
+  gap: 6px;
+  background: var(--bg-subtle);
+  border-radius: 4px;
 }
 
 summary::before {
   content: "▶";
-  font-size: var(--text-2xs);
-  color: var(--win95-text);
+  font-size: 0.6rem;
+  color: var(--text-muted);
 }
 
 details[open] summary::before { content: "▼"; }
+details[open] summary { border-radius: 4px 4px 0 0; }
 
 details > *:not(summary) {
-  padding: 8px;
+  padding: 10px;
 }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TOOLTIP ICON
+   TOOLTIP  (? badge on form labels — admin settings, EDL form, YT bulk-dl)
    ═══════════════════════════════════════════════════════════════════════════ */
 .tooltip-icon {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  background: var(--win95-bg);
-  box-shadow: var(--raised);
-  color: var(--win95-text);
-  font-size: var(--text-xxs);
-  font-weight: bold;
-  cursor: help;
-  flex-shrink: 0;
-  vertical-align: middle;
-  margin-left: 4px;
-}
-
-/* Position tooltip icon inline with label text (top-right corner) */
-label > .tooltip-icon {
   position: absolute;
   top: 0;
   right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: help;
+  flex-shrink: 0;
 }
 
 .tooltip-icon::after {
@@ -666,154 +558,186 @@ label > .tooltip-icon {
   bottom: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
-  background: var(--win95-gray-light);
-  box-shadow: var(--raised);
-  color: var(--win95-text);
-  padding: 4px 8px;
-  font-family: "Pixelated MS Sans Serif", "MS Sans Serif", Arial, sans-serif;
-  font-size: var(--text-xs);
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: 0.78rem;
   font-weight: normal;
   white-space: normal;
-  width: 200px;
+  width: 220px;
   opacity: 0;
   pointer-events: none;
   z-index: 200;
   line-height: 1.4;
   text-align: left;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .tooltip-icon:hover::after { opacity: 1; }
 
+/* Tooltip on a label is positioned absolute within the label */
+label > .tooltip-icon {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+/* Tooltip outside a label (e.g. inline in form-grid) */
+label .tooltip-icon {
+  position: relative;
+  top: auto;
+  right: auto;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+
 /* ═══════════════════════════════════════════════════════════════════════════
-   PIPELINE FLOWCHART (job status steps)
+   PIPELINE STEPS  (job status pages — Spotify to MP3, YT Bulk DL)
    ═══════════════════════════════════════════════════════════════════════════ */
 .pipeline-steps {
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 .pipeline-step {
   display: flex;
   gap: 10px;
   padding: 6px 8px;
-  border-left: 2px solid var(--win95-edge-dark);
+  border-left: 2px solid var(--border);
   margin-left: 12px;
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
 .pipeline-step.done,
-.pipeline-step.active {
-  opacity: 1;
-}
+.pipeline-step.active { opacity: 1; }
 
 .pipeline-step:last-child { border-left-color: transparent; }
 
+/* Circular marker next to each step */
 .step-marker {
-  flex: 0 0 18px;
-  height: 18px;
+  flex: 0 0 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-sm);
-  margin-left: -19px;
-  background: var(--win95-bg);
-  box-shadow: var(--raised);
-  color: var(--win95-text-dim);
-  font-weight: bold;
+  font-size: 0.8rem;
+  margin-left: -21px;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 .pipeline-step.done .step-marker {
-  background: var(--win95-success-bg);
-  color: var(--win95-success);
+  background: color-mix(in srgb, var(--color-2) 15%, var(--bg-light));
+  border-color: var(--color-2);
+  color: var(--color-2);
 }
 
 .pipeline-step.active .step-marker {
-  background: var(--win95-warning-bg);
-  color: var(--win95-title-bg);
+  background: color-mix(in srgb, var(--color-4) 15%, var(--bg-light));
+  border-color: var(--color-4);
+  color: var(--color-4);
   animation: blink 1s step-end infinite;
 }
 
 @keyframes blink {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
+  50%       { opacity: 0.3; }
 }
 
-.step-body h4 {
-  margin-bottom: 2px;
-}
-
+/* Dim detail text within a step — e.g. "3 / 12 downloaded" */
 .step-detail {
-  font-size: var(--text-xs);
-  color: var(--win95-text-dim);
+  font-size: 0.8rem;
+  color: var(--text-muted);
   margin-bottom: 4px;
 }
 
+
 /* ═══════════════════════════════════════════════════════════════════════════
    TRACK / VIDEO TABLE
+   Spotify to MP3 status page + YT Bulk DL status page
    ═══════════════════════════════════════════════════════════════════════════ */
 .track-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--text-sm);
-  margin-top: 4px;
+  font-size: 0.85rem;
+  margin-top: 6px;
   table-layout: fixed;
-  box-shadow: var(--sunken);
-  background: var(--win95-input-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-light);
 }
 
 .track-table th {
   text-align: left;
-  font-weight: bold;
-  padding: 2px 6px;
-  background: var(--win95-gray-light);
-  border-bottom: 1px solid var(--win95-edge-dark);
-  font-size: var(--text-xs);
-  color: var(--win95-text);
+  font-weight: 600;
+  padding: 4px 8px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
+/* YT/DL status columns are narrow and centred */
 .track-table th:nth-child(2),
 .track-table th:nth-child(3) {
-  width: 30px;
+  width: 36px;
   text-align: center;
 }
 
 .track-table td {
-  padding: 2px 6px;
-  border-bottom: 1px solid var(--win95-gray-light);
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--bg-subtle);
 }
 
 .track-table tr:last-child td { border-bottom: none; }
+.track-table tr:nth-child(even) { background: var(--bg-subtle); }
 
-.track-table tr:nth-child(even) { background: #F0F0F0; }
-
+/* Truncated track/video name column */
 .track-name-cell {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--win95-text);
 }
 
+/* Status icon column (YT found / DL done etc.) */
 .track-status-cell {
   text-align: center;
-  font-size: var(--text-sm);
+  font-size: 0.85rem;
 }
 
-.yt-found       { color: var(--win95-success); }
-.yt-not_found   { color: var(--win95-error); }
-.dl-done        { color: var(--win95-success); }
-.dl-error       { color: var(--win95-error); }
-.dl-downloading { color: var(--win95-title-bg); }
+/* Action cell (per-row download button in YT bulk-dl) */
+.track-action-cell {
+  width: 36px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Status colour classes applied to .track-status-cell */
+.yt-found       { color: var(--color-2); }
+.yt-not_found   { color: var(--color-3); }
+.dl-done        { color: var(--color-2); }
+.dl-error       { color: var(--color-3); }
+.dl-downloading { color: var(--color-1); }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   DONE PANEL
+   DONE PANEL  (download-ready state on job status pages)
    ═══════════════════════════════════════════════════════════════════════════ */
 .done-panel {
   margin-top: 8px;
-  padding: 8px;
-  background: var(--win95-success-bg);
-  box-shadow: var(--sunken);
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--color-2) 10%, var(--bg-light));
+  border: 1px solid color-mix(in srgb, var(--color-2) 30%, transparent);
+  border-radius: 4px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -823,136 +747,174 @@ label > .tooltip-icon {
 .done-panel p {
   margin: 0;
   flex: 1;
-  font-size: var(--text-sm);
-  color: var(--win95-text);
+  font-size: 0.875rem;
 }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   LOGIN WINDOW (centered on desktop)
+   LOGIN PAGE  (auth/login.html — centred panel)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-main.page-container.login-main {
-  background: transparent;
-  box-shadow: none;
-  display: flex;
-  justify-content: center;
-  padding-top: 40px;
-}
-
-.login-window {
-  background: var(--win95-bg);
-  box-shadow: var(--raised);
+/* The .panel inside .login-main */
+.login-main .panel {
   width: 100%;
-  max-width: 340px;
+  max-width: 360px;
 }
 
+/* Icon + site-name header at top of login panel */
+.login-intro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.login-intro svg { flex-shrink: 0; }
+
+.login-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.login-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Table layout for Username / Password label-input pairs */
 .login-form-table {
   width: 100%;
-  border-spacing: 4px 4px;
+  border-spacing: 4px 6px;
   border-collapse: separate;
-  margin-bottom: 12px;
 }
 
 .login-form-table td:first-child {
   white-space: nowrap;
   text-align: right;
   padding-right: 6px;
-  font-size: var(--text-sm);
+  font-size: 0.875rem;
+  vertical-align: middle;
 }
 
-.login-form-table td:last-child {
-  width: 100%;
-}
+.login-form-table td:last-child { width: 100%; }
 
+/* OK / Cancel buttons row */
 .login-buttons {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   justify-content: center;
 }
 
+
 /* ═══════════════════════════════════════════════════════════════════════════
-   USERS TABLE (admin)
+   ACCOUNT PAGE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Username / Role / Provider block at top of account page */
+.user-info {
+  margin-bottom: 10px;
+  line-height: 1.8;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ADMIN — users table  (admin/index.html and admin/users.html)
    ═══════════════════════════════════════════════════════════════════════════ */
 .users-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--text-sm);
-  box-shadow: var(--sunken);
-  background: var(--win95-input-bg);
-  margin-bottom: 12px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-light);
 }
 
 .users-table th {
   text-align: left;
-  font-weight: bold;
-  padding: 3px 6px;
-  background: var(--win95-gray-light);
-  border-bottom: 1px solid var(--win95-edge-dark);
+  font-weight: 600;
+  padding: 5px 8px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.78rem;
 }
 
 .users-table td {
-  padding: 2px 6px;
-  border-bottom: 1px solid var(--win95-gray-light);
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--bg-subtle);
 }
 
 .users-table tr:last-child td { border-bottom: none; }
-.users-table tr:nth-child(even) { background: #F0F0F0; }
+.users-table tr:nth-child(even) { background: var(--bg-subtle); }
+
+/* Lock icon column and similar centred cells */
+.users-table .col-center { text-align: center; }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SEPARATOR / DIVIDER
-   ═══════════════════════════════════════════════════════════════════════════ */
-/* Rule syntax guide — inline code tokens rendered as plain bold monospace */
-.syntax-guide code {
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
-  font-weight: bold;
-}
-
-hr {
-  border: none;
-  border-top: 1px solid var(--win95-edge-dark);
-  border-bottom: 1px solid var(--win95-edge-light);
-  margin: 8px 0;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   ELAPSED TIME
+   ACTIVITY LOG  (Spotify to MP3 job status page)
    ═══════════════════════════════════════════════════════════════════════════ */
 .elapsed-time {
-  font-size: 0.86rem;
-  color: var(--text-tertiary);
-  margin-bottom: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   ACTIVITY LOG
-   ═══════════════════════════════════════════════════════════════════════════ */
-.activity-log-details {
-  margin-top: 1.2rem;
-}
+.activity-log-details { margin-top: 4px; }
 
 .activity-log {
   max-height: 220px;
   overflow-y: auto;
-  padding: 0.5rem 1rem;
-  font-size: 0.82rem;
-  font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
-  line-height: 1.65;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-family: "Courier New", Courier, monospace;
+  line-height: 1.6;
 }
 
 .log-entry {
   display: flex;
-  gap: 0.65rem;
+  gap: 8px;
 }
 
 .log-time {
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .log-msg {
-  color: var(--text-secondary);
+  color: var(--text);
   word-break: break-word;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SYNTAX GUIDE  (collapsible in EDL to Archive form)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.syntax-guide { font-size: 0.82rem; }
+
+/* Plain bold monospace — no box around inline code tokens */
+.syntax-guide code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-weight: 700;
+}
+
+/* The example block inside the guide */
+.syntax-guide pre {
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  font-size: 0.78rem;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .tool-grid { grid-template-columns: 1fr; }
+  .page-container { margin: 6px; }
 }

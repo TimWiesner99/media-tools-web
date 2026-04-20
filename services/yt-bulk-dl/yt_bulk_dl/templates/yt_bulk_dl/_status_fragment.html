@@ -35,7 +35,7 @@
           {%- if error_n %} · {{ error_n }} failed{% endif %}
         </p>
         {% if job.phase == "done" %}
-        <p><a href="{{ file_download_base }}metadata.csv" role="button" class="btn-small">Download metadata.csv</a></p>
+        <p><a href="{{ file_download_base }}metadata.csv" role="button" class="btn-sm">Download metadata.csv</a></p>
         {% endif %}
         <table class="track-table">
           <thead>
@@ -60,7 +60,7 @@
               </td>
               <td class="track-action-cell">
                 {% if vs.status == "done" and vs.filename %}
-                  <a href="{{ file_download_base }}{{ vs.filename | urlencode }}" class="btn-small" title="Download {{ vs.filename }}">💾</a>
+                  <a href="{{ file_download_base }}{{ vs.filename | urlencode }}" class="btn-sm" title="Download {{ vs.filename }}">💾</a>
                 {% endif %}
               </td>
             </tr>
@@ -94,7 +94,7 @@
       {% endif %}
     {% endfor %}
   {% endif %}
-  <a href="/yt-bulk-dl/" role="button" class="btn-secondary">Download more</a>
+  <a href="/yt-bulk-dl/" role="button">Download more</a>
 </div>
 {% endif %}
 

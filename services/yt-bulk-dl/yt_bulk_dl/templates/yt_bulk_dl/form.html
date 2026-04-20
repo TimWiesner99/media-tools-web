@@ -3,15 +3,9 @@
 {% block title %}YT Bulk Download{% endblock %}
 
 {% block content %}
-<div class="win95-window">
-  <div class="win95-title-bar">
-    <span class="win95-title-bar-icon">▶</span>
-    <span class="win95-title-bar-text">YouTube Bulk Download</span>
-    <div class="win95-title-bar-buttons">
-      <span>_</span><span>□</span><span>×</span>
-    </div>
-  </div>
-  <div class="win95-window-content">
+<div class="panel">
+  <div class="panel-header">▶ YouTube Bulk Download</div>
+  <div class="panel-body">
 
     <p>Enter YouTube URLs to download as MP4 (H.264 + AAC). One URL per line. Lines starting with <code>#</code> are treated as comments.</p>
 
@@ -32,7 +26,7 @@
         >{{ urls_text or "" }}</textarea>
       </label>
 
-      <div class="form-grid" style="margin-top:8px;">
+      <div class="form-grid">
         <label>
           Filename prefix <span class="tooltip-icon" data-tooltip="Optional. Prepended to every output filename — e.g. prefix_title.mp4. Letters, numbers, underscores and hyphens only.">?</span>
           <input
@@ -56,8 +50,8 @@
         </label>
       </div>
 
-      <div style="margin-top:8px;">
-        <button type="submit" class="btn-action">Start download</button>
+      <div class="form-actions">
+        <button type="submit">Start download</button>
       </div>
     </form>
 

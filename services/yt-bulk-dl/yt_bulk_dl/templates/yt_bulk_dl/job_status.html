@@ -8,20 +8,15 @@
 {% endblock %}
 
 {% block content %}
-<div class="win95-window">
-  <div class="win95-title-bar">
-    <span class="win95-title-bar-icon">▶</span>
-    <span class="win95-title-bar-text">
-      {% if job.status == "done" %}Download Ready
-      {% elif job.status == "error" %}Download Failed
-      {% else %}Downloading…
-      {% endif %} — YT Bulk Download
-    </span>
-    <div class="win95-title-bar-buttons">
-      <span>_</span><span>□</span><span>×</span>
-    </div>
+<div class="panel">
+  <div class="panel-header">
+    ▶
+    {% if job.status == "done" %}Download Ready
+    {% elif job.status == "error" %}Download Failed
+    {% else %}Downloading…
+    {% endif %} — YT Bulk Download
   </div>
-  <div class="win95-window-content">
+  <div class="panel-body">
     {% include "yt_bulk_dl/_status_fragment.html" %}
   </div>
 </div>

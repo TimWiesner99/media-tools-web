@@ -3,17 +3,11 @@
 {% block title %}Account — Media Tools{% endblock %}
 
 {% block content %}
-<div class="win95-window">
-  <div class="win95-title-bar">
-    <span class="win95-title-bar-icon">👤</span>
-    <span class="win95-title-bar-text">Account Settings — {{ user.username }}</span>
-    <div class="win95-title-bar-buttons">
-      <span>_</span><span>□</span><span>×</span>
-    </div>
-  </div>
-  <div class="win95-window-content">
+<div class="panel">
+  <div class="panel-header">👤 Account Settings — {{ user.username }}</div>
+  <div class="panel-body">
 
-    <div style="margin-bottom:10px;">
+    <div class="user-info">
       <strong>Username:</strong> {{ user.username }}<br>
       <strong>Role:</strong> {{ user.role }}<br>
       <strong>Provider:</strong> {{ user.auth_provider }}
@@ -22,11 +16,9 @@
     <hr>
 
     {% if user.auth_provider == "local" %}
-    <div class="win95-window">
-      <div class="win95-title-bar">
-        <span class="win95-title-bar-text">Change Password</span>
-      </div>
-      <div class="win95-window-content">
+    <div class="panel">
+      <div class="panel-header">Change Password</div>
+      <div class="panel-body">
 
         {% if error %}
         <div class="error-banner">{{ error }}</div>
@@ -51,14 +43,14 @@
             Confirm New Password
             <input type="password" id="confirm-pw" autocomplete="new-password" required />
           </label>
-          <div style="margin-top:8px;">
-            <button type="submit" class="btn-action">Change Password</button>
+          <div class="form-actions">
+            <button type="submit">Change Password</button>
           </div>
         </form>
       </div>
     </div>
     {% else %}
-    <p style="color:var(--win95-text-dim);">Password management is not available for SSO accounts.</p>
+    <p class="text-muted">Password management is not available for SSO accounts.</p>
     {% endif %}
 
   </div>

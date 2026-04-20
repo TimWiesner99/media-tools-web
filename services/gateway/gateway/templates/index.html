@@ -3,79 +3,73 @@
 {% block title %}Media Tools — Home{% endblock %}
 
 {% block content %}
-<div class="win95-window">
-  <div class="win95-title-bar">
-    <span class="win95-title-bar-icon">🖥</span>
-    <span class="win95-title-bar-text">Media Tools</span>
-    <div class="win95-title-bar-buttons">
-      <span>_</span><span>□</span><span>×</span>
-    </div>
-  </div>
-  <div class="win95-window-content">
-    <p>A self-hosted collection of media utilities. Double-click a tool to get started.</p>
+<div class="panel">
+  <div class="panel-header">🖥 Media Tools</div>
+  <div class="panel-body">
+    <p>A self-hosted collection of media utilities.</p>
 
     <div class="tool-grid">
 
-      <article>
-        <div class="tool-icon">
-          {# Spotify → MP3 icon (pixelated music note / CD) #}
-          <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated">
-            <rect x="0" y="0" width="32" height="32" fill="#1DB954"/>
-            <rect x="8" y="4" width="4" height="16" fill="#fff"/>
-            <rect x="12" y="4" width="8" height="4" fill="#fff"/>
-            <circle cx="12" cy="22" r="4" fill="#fff"/>
-            <rect x="20" y="4" width="4" height="16" fill="#fff"/>
-          </svg>
-          <span class="tool-icon-label">Spotify to MP3</span>
+      <div class="panel">
+        <div class="panel-body">
+          <div class="tool-icon">
+            {# Spotify → MP3 icon #}
+            <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0" y="0" width="32" height="32" fill="#1DB954"/>
+              <rect x="8" y="4" width="4" height="16" fill="#fff"/>
+              <rect x="12" y="4" width="8" height="4" fill="#fff"/>
+              <circle cx="12" cy="22" r="4" fill="#fff"/>
+              <rect x="20" y="4" width="4" height="16" fill="#fff"/>
+            </svg>
+            <span class="tool-icon-label">Spotify to MP3</span>
+          </div>
+          <p class="tool-desc">Convert a Spotify playlist, album, or track into MP3 files.</p>
         </div>
-        <div style="padding: 0 8px 4px; font-size: 10px; color: var(--win95-text-dim); min-height: 30px;">
-          Convert a Spotify playlist, album, or track into MP3 files.
-        </div>
-        <footer>
+        <div class="panel-body">
           <a href="/green-to-red/" role="button">Open</a>
-        </footer>
-      </article>
+        </div>
+      </div>
 
-      <article>
-        <div class="tool-icon">
-          {# EDL → Archive icon (spreadsheet) #}
-          <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated">
-            <rect x="2" y="2" width="28" height="28" fill="#fff" stroke="#000" stroke-width="2"/>
-            <rect x="2" y="2" width="28" height="8" fill="#008080"/>
-            <rect x="2" y="10" width="6" height="20" fill="#C0C0FF"/>
-            <rect x="8" y="14" width="22" height="2" fill="#e0e0e0"/>
-            <rect x="8" y="18" width="22" height="2" fill="#e0e0e0"/>
-            <rect x="8" y="22" width="22" height="2" fill="#e0e0e0"/>
-            <rect x="8" y="26" width="22" height="2" fill="#e0e0e0"/>
-          </svg>
-          <span class="tool-icon-label">EDL to Archive</span>
+      <div class="panel">
+        <div class="panel-body">
+          <div class="tool-icon">
+            {# EDL → Archive icon (spreadsheet) #}
+            <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="2" width="28" height="28" fill="#fff" stroke="#000" stroke-width="2"/>
+              <rect x="2" y="2" width="28" height="8" fill="#008080"/>
+              <rect x="2" y="10" width="6" height="20" fill="#C0C0FF"/>
+              <rect x="8" y="14" width="22" height="2" fill="#e0e0e0"/>
+              <rect x="8" y="18" width="22" height="2" fill="#e0e0e0"/>
+              <rect x="8" y="22" width="22" height="2" fill="#e0e0e0"/>
+              <rect x="8" y="26" width="22" height="2" fill="#e0e0e0"/>
+            </svg>
+            <span class="tool-icon-label">EDL to Archive</span>
+          </div>
+          <p class="tool-desc">Combine EDL lists with source archive into an Excel report.</p>
         </div>
-        <div style="padding: 0 8px 4px; font-size: 10px; color: var(--win95-text-dim); min-height: 30px;">
-          Combine EDL lists with source archive into an Excel report.
-        </div>
-        <footer>
+        <div class="panel-body">
           <a href="/edl-to-archive/" role="button">Open</a>
-        </footer>
-      </article>
+        </div>
+      </div>
 
-      <article>
-        <div class="tool-icon">
-          {# YT Bulk Download icon (red arrow / video) #}
-          <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated">
-            <rect x="0" y="0" width="32" height="32" fill="#FF0000"/>
-            <polygon points="10,8 26,16 10,24" fill="#fff"/>
-            <rect x="4" y="26" width="24" height="3" fill="#fff"/>
-            <polygon points="12,22 20,22 16,28" fill="#fff"/>
-          </svg>
-          <span class="tool-icon-label">YT Bulk Download</span>
+      <div class="panel">
+        <div class="panel-body">
+          <div class="tool-icon">
+            {# YT Bulk Download icon #}
+            <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0" y="0" width="32" height="32" fill="#FF0000"/>
+              <polygon points="10,8 26,16 10,24" fill="#fff"/>
+              <rect x="4" y="26" width="24" height="3" fill="#fff"/>
+              <polygon points="12,22 20,22 16,28" fill="#fff"/>
+            </svg>
+            <span class="tool-icon-label">YT Bulk Download</span>
+          </div>
+          <p class="tool-desc">Download multiple YouTube videos in bulk.</p>
         </div>
-        <div style="padding: 0 8px 4px; font-size: 10px; color: var(--win95-text-dim); min-height: 30px;">
-          Download multiple YouTube videos in bulk.
-        </div>
-        <footer>
+        <div class="panel-body">
           <a href="/yt-bulk-dl/" role="button">Open</a>
-        </footer>
-      </article>
+        </div>
+      </div>
 
     </div>
   </div>

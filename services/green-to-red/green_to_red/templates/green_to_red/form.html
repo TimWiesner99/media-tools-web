@@ -3,15 +3,9 @@
 {% block title %}Spotify → MP3{% endblock %}
 
 {% block content %}
-<div class="win95-window">
-  <div class="win95-title-bar">
-    <span class="win95-title-bar-icon">🎵</span>
-    <span class="win95-title-bar-text">Spotify → MP3</span>
-    <div class="win95-title-bar-buttons">
-      <span>_</span><span>□</span><span>×</span>
-    </div>
-  </div>
-  <div class="win95-window-content">
+<div class="panel">
+  <div class="panel-header">🎵 Spotify → MP3</div>
+  <div class="panel-body">
 
     <p>Enter a Spotify playlist, album, or track URL to download the audio as MP3 files, along with a CSV of licensing metadata.</p>
 
@@ -31,8 +25,8 @@
           autofocus
         />
       </label>
-      <div style="margin-top:8px;">
-        <button type="submit" class="btn-action">Start download</button>
+      <div class="form-actions">
+        <button type="submit">Start download</button>
       </div>
     </form>
 

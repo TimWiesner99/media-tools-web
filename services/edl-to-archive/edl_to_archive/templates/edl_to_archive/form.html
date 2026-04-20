@@ -3,15 +3,9 @@
 {% block title %}EDL to Archive{% endblock %}
 
 {% block content %}
-<div class="win95-window">
-  <div class="win95-title-bar">
-    <span class="win95-title-bar-icon">📊</span>
-    <span class="win95-title-bar-text">EDL to Archive</span>
-    <div class="win95-title-bar-buttons">
-      <span>_</span><span>□</span><span>×</span>
-    </div>
-  </div>
-  <div class="win95-window-content">
+<div class="panel">
+  <div class="panel-header">📊 EDL to Archive</div>
+  <div class="panel-body">
 
     <p>Combine an Edit Decision List with a source archive to produce a definitive Excel report with matched metadata, cost deduplication, and occurrence tracking.</p>
 
@@ -46,7 +40,7 @@
       </div>
 
       {# ── Options ──────────────────────────────────────────────────── #}
-      <div class="form-grid" style="margin-top:8px;">
+      <div class="form-grid">
         <label>
           Frame rate
           <select name="fps">
@@ -57,14 +51,14 @@
             {% endfor %}
           </select>
         </label>
-        <div style="display:flex; flex-direction:column; gap:6px; justify-content:flex-end;">
-          <label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
+        <div class="form-col-end">
+          <label>
             <input type="checkbox" name="collapse"
                    {% if session.collapse %}checked{% endif %} />
             Collapse consecutive entries
             <span class="tooltip-icon" data-tooltip="Merge continuous clips of the same source into one row.">?</span>
           </label>
-          <label style="display:flex;align-items:center;gap:6px;font-weight:normal;">
+          <label>
             <input type="checkbox" name="include_frames"
                    {% if session.include_frames %}checked{% endif %} />
             Include frame precision in timecodes
@@ -74,45 +68,43 @@
       </div>
 
       {# ── Exclusion rules ──────────────────────────────────────────── #}
-      <label style="margin-top:8px;display:block;">
+      <label class="label-block">
         Exclusion rules <span class="tooltip-icon" data-tooltip="One rule per line. Matching entries are removed before processing. Lines starting with # are comments.">?</span>
         <textarea name="exclusion_rules" rows="8" class="mono-textarea"
         >{{ session.exclusion_rules }}</textarea>
       </label>
 
       {# ── Rule syntax ──────────────────────────────────────────────── #}
-      <details style="margin-top:6px;">
-        <summary style="cursor:pointer;font-size:11px;">Rule syntax</summary>
-        <div class="win95-window" style="margin-top:4px;">
-          <div class="win95-window-content syntax-guide" style="font-size:11px;">
+      <details>
+        <summary>Rule syntax</summary>
+        <div class="panel syntax-guide">
+          <div class="panel-body">
             <p><strong>Fields:</strong> <code>name</code>, <code>file_name</code> (or <code>Bestandsnaam</code>), <code>reel</code>, <code>track</code>, <code>comment</code></p>
             <p><strong>Operators:</strong> <code>IS</code> (exact match) · <code>INCLUDES</code> (substring)</p>
             <p><strong>Logic:</strong> <code>AND</code> · <code>OR</code> · <code>NOT</code> · <code>( )</code></p>
             <p>Lines are OR'd — any matching line excludes the entry.</p>
-            <pre style="background:transparent;box-shadow:none;padding:4px;font-size:var(--text-xs);">file_name IS "" AND name INCLUDES ".MXF.SYNC"
+            <pre>file_name IS "" AND name INCLUDES ".MXF.SYNC"
 name INCLUDES "TEMP"
 (name INCLUDES "A0" OR name INCLUDES "B0") AND NOT comment INCLUDES "keep"</pre>
           </div>
         </div>
       </details>
 
-      <div style="margin-top:8px;">
-        <button type="submit" class="btn-action">Convert → download DEF.xlsx</button>
+      <div class="form-actions">
+        <button type="submit">Convert → download DEF.xlsx</button>
       </div>
     </form>
 
     <hr>
 
     {# ── Template downloads ───────────────────────────────────────── #}
-    <div class="win95-window" style="margin-top:8px;">
-      <div class="win95-title-bar">
-        <span class="win95-title-bar-text">Blank Templates</span>
-      </div>
-      <div class="win95-window-content">
+    <div class="panel">
+      <div class="panel-header">Blank Templates</div>
+      <div class="panel-body">
         <p>Download pre-formatted Excel templates to fill in:</p>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <a href="template/edl" role="button" class="btn-secondary">EDL template</a>
-          <a href="template/source" role="button" class="btn-secondary">Source template</a>
+        <div class="btn-row">
+          <a href="template/edl" role="button">EDL template</a>
+          <a href="template/source" role="button">Source template</a>
         </div>
       </div>
     </div>
