@@ -4,10 +4,10 @@
 
 {% block content %}
 <div class="panel">
-  <div class="panel-header">📊 EDL to Archive</div>
+  <div class="panel-header">EDL to Archive</div>
   <div class="panel-body">
 
-    <p>Combine an Edit Decision List with a source archive to produce a definitive Excel report with matched metadata, cost deduplication, and occurrence tracking.</p>
+    <p>Combine an <b>Edit Decision List</b> with a source archive to produce a definitive Excel report with matched metadata, cost deduplication, and occurrence tracking.</p>
 
     {% if error %}
     <div class="error-banner"><strong>Error:</strong> {{ error }}</div>
@@ -28,7 +28,7 @@
       {# ── File uploads ─────────────────────────────────────────────── #}
       <div class="form-grid">
         <label>
-          EDL file <span class="tooltip-icon" data-tooltip="Export from AVID or Premiere Pro, then convert to .xlsx, .ods, .csv, or .tsv format.">?</span>
+          EDL file<span class="tooltip-icon" data-tooltip="Export from AVID or Premiere Pro, then convert to .xlsx, .ods, .csv, or .tsv format.">?</span>
           <input type="file" name="edl_file"
                  accept=".xlsx,.ods,.csv,.tsv,.txt" required />
         </label>

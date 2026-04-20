@@ -4,94 +4,89 @@
 
 {% block content %}
 <div class="panel">
-  <div class="panel-header">⚙ Admin Panel — Media Tools</div>
+  <div class="panel-header">Admin Panel - Media Tools</div>
   <div class="panel-body">
 
     <p>Settings are stored in memory and reset on server restart.</p>
     <hr>
 
     {# ── User Management ─────────────────────────────────────────────────── #}
-    <div class="panel">
-      <div class="panel-header">👥 User Management</div>
-      <div class="panel-body">
+    <details>
+      <summary>
+        User Management
+      </summary>
 
-        {% if error %}
-        <div class="error-banner">{{ error }}</div>
-        {% endif %}
+      {% if error %}
+      <div class="error-banner">{{ error }}</div>
+      {% endif %}
 
-        <div class="panel">
-          <div class="panel-header">Users</div>
-          <div class="panel-body">
-            <table class="users-table">
-              <thead>
-                <tr>
-                  <th>Username</th>
-                  <th>Role</th>
-                  <th>Provider</th>
-                  <th class="col-center">🔒</th>
-                  <th>Created</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for u in users %}
-                <tr>
-                  <td>{{ u.username }}</td>
-                  <td>{{ u.role }}</td>
-                  <td>{{ u.auth_provider }}</td>
-                  <td class="col-center">{% if u.is_permanent %}🔒{% endif %}</td>
-                  <td>{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
-                  <td>
-                    {% if not u.is_permanent %}
-                    <form method="post" action="/admin/users/{{ u.id }}/delete" class="form-inline"
-                          onsubmit="return confirm('Delete user \'{{ u.username }}\'?')">
-                      <button type="submit" class="btn-sm">Delete</button>
-                    </form>
-                    {% else %}
-                    <span class="text-muted">Protected</span>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="6" class="col-center text-muted">No users found.</td></tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+      <h4> Users </h4>
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Provider</th>
+            <th class="col-center">🔒</th>
+            <th>Created</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ u.username }}</td>
+            <td>{{ u.role }}</td>
+            <td>{{ u.auth_provider }}</td>
+            <td class="col-center">{% if u.is_permanent %}🔒{% endif %}</td>
+            <td>{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
+            <td>
+              {% if not u.is_permanent %}
+              <form method="post" action="/admin/users/{{ u.id }}/delete" class="form-inline"
+                    onsubmit="return confirm('Delete user \'{{ u.username }}\'?')">
+                <button type="submit" class="btn-sm">Delete</button>
+              </form>
+              {% else %}
+              <span class="text-muted">Protected</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="col-center text-muted">No users found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <br>
+
+      <h4>Add new user</h4>
+
+      <form id="create-form" method="post" action="/admin/users/create"
+            onsubmit="return hashNewUser(event)">
+        <input type="hidden" name="password_hash" id="new-user-pw-hash" />
+        <div class="form-grid">
+          <label>
+            Username
+            <input type="text" name="username" required />
+          </label>
+          <label>
+            Password
+            <input type="password" id="new-user-pw" required />
+          </label>
+          <label>
+            Role
+            <select name="role">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
         </div>
-
-        <div class="panel">
-          <div class="panel-header">Create New User</div>
-          <div class="panel-body">
-            <form id="create-form" method="post" action="/admin/users/create"
-                  onsubmit="return hashNewUser(event)">
-              <input type="hidden" name="password_hash" id="new-user-pw-hash" />
-              <div class="form-grid">
-                <label>
-                  Username
-                  <input type="text" name="username" required />
-                </label>
-                <label>
-                  Password
-                  <input type="password" id="new-user-pw" required />
-                </label>
-                <label>
-                  Role
-                  <select name="role">
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </label>
-              </div>
-              <div class="form-actions">
-                <button type="submit">Create User</button>
-              </div>
-            </form>
-          </div>
+        <div class="form-actions">
+          <button type="submit">Create User</button>
         </div>
+      </form>
 
-      </div>
-    </div>
+    </details>
 
     <hr>
 
