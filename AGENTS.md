@@ -1,6 +1,14 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI agents like Claude Code (claude.ai/code) or GPT when working with code in this repository.
+
+## Hardware and Performance Requirements
+
+This project is a prototype of software that will eventually run on a company-internal server. Heavy AI-services like LLMs will be provided externally. This program must be able to interface with these external services, but internal environments can be spun up for testing and prototyping. The users must be able to run everything on office-grade laptops from their browser, so the heavy-lifting must be done by the server. Keep scalability in mind, but don't worry about throusands of concurrent users. Realistically, this service would be accessed by no more than 50 concurrent users.
+
+The code is being tested on a Dell laptop without dedicated graphics card.
+
+The current production server is an LXC container running on a Proxmox server with 4GB of DDR3 memory and 128GB of mounted storage at `~/data`. A second dedicated LXC for transcription only is running on a second Proxmox with a dedicated GPU (a GTX 1650 with 4GB of VRAM).
 
 ## Plan & Review
 
