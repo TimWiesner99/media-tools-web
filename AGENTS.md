@@ -23,6 +23,30 @@ The current production server is an LXC container running on a Proxmox server wi
 ### While implementing
 - You should update the plan as you work.
 - After you complete tasks in the plan, you should update and append detailed descriptions of the changes you made, so following tasks can be easily hand over to other engineers.
+- When adding new functions, include a proper docstring.
+- Run processes in parallel whenever possible. Use multiple agents in order to do so.
+- If the task touches more than one file, summarize the plan in bullet points and wait for confirmation before editing.
+- When making changes, keep the code as clean and readable as possible. Removing unnecessary code is imperative, and simplifying existing code, instead of adding on more and more, is always preferred.
+- If there are any inconsistencies between existing code, new additions or my prompts, please present them to me and let me make choices, before solving them yourself.
+
+### Validation
+
+- Always run tests before marking work complete.
+- Current test command: `uv run pytest`.
+- If there are no tests covering the change, run the most relevant command available and say so explicitly.
+
+### Response Style
+
+- Keep responses short and direct.
+- Ask one clarifying question when needed, not several.
+- Prefer links to existing docs over copying long architecture explanations into responses or instructions.
+- When researching ways to implement new features, keep the generated overviews brief and focused on the core techniques and frameworks being used.
+
+### Git
+
+- Branch naming: `feature/short-description` or `fix/short-description`.
+- Commit messages should follow conventional commits.
+
 
 ## Commands
 
@@ -42,6 +66,13 @@ There are no tests or linting configured in this project.
 ## Architecture
 
 A `uv` workspace monorepo. The `gateway` service is the only entry point — it imports and mounts the other three services as ASGI sub-apps at `/green-to-red`, `/yt-bulk-dl`, and `/edl-to-archive`. Each sub-app mount is wrapped in `try/except ImportError` so the server starts even if a service package is missing.
+
+Remeber these general rules:
+
+- Prefer GPU-first detection paths, but fall back to CPU-based computation of no GPU is present.
+- When working with video files and subtitles, never assume 25 fps. Frame rate and dimensions are normally discovered via ffprobe.
+- If an SRT contains large transcript-style blocks, the sidecar exporter must split them into smaller subtitle chunks and trim boundary text proportionally. The goal is to keep each bloack below 42 characters.
+- The browser UI is intentionally dependency-light and uses the standard library HTTP server plus static HTML/CSS/JS.
 
 ### Two patterns for services
 
