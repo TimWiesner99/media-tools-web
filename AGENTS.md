@@ -65,7 +65,20 @@ There are no tests or linting configured in this project.
 
 ## Architecture
 
-A `uv` workspace monorepo. The `gateway` service is the only entry point — it imports and mounts the other three services as ASGI sub-apps at `/green-to-red`, `/yt-bulk-dl`, and `/edl-to-archive`. Each sub-app mount is wrapped in `try/except ImportError` so the server starts even if a service package is missing.
+A `uv` workspace monorepo. The `gateway` service is the only entry point — it imports and mounts the other services as ASGI sub-apps at `/green-to-red`, `/yt-bulk-dl`, and `/edl-to-archive`, and so forth. Each sub-app mount is wrapped in `try/except ImportError` so the server starts even if a service package is missing.
+
+The `transcribe` service follows the **job-queue pattern** (like `green-to-red` and
+`yt-bulk-dl`), with one important difference: it is a **thin client of an external,
+OpenAI-compatible transcription service ([Speaches](https://github.com/speaches-ai/speaches),
+deployed separately in its own GPU LXC)**, not a self-contained pipeline. Its pipeline does
+three things: extract audio from the upload with ffmpeg (then delete the original), call Speaches'
+`POST /v1/audio/transcriptions` endpoint, and relay its result/progress back into local `Job`
+events. No model runs inside this repo and there is no GPU dependency here. Because Speaches speaks
+the OpenAI audio API, the call can use the official `openai` Python client
+(`base_url=TRANSCRIBE_SERVICE_URL`, `api_key=TRANSCRIBE_API_TOKEN`) or a plain HTTP client.
+
+Mount it in `gateway/main.py` at `/transcribe` using the same `try/except ImportError`
+guard as the other services.
 
 Remeber these general rules:
 
@@ -73,12 +86,33 @@ Remeber these general rules:
 - When working with video files and subtitles, never assume 25 fps. Frame rate and dimensions are normally discovered via ffprobe.
 - If an SRT contains large transcript-style blocks, the sidecar exporter must split them into smaller subtitle chunks and trim boundary text proportionally. The goal is to keep each bloack below 42 characters.
 - The browser UI is intentionally dependency-light and uses the standard library HTTP server plus static HTML/CSS/JS.
+- `transcribe` extracts audio as **16 kHz mono** (what Whisper expects) before sending it on;
+  this also minimises the network payload. Probe input with ffprobe; never assume a format.
+- Call Speaches as an **OpenAI audio endpoint**: pass `model=TRANSCRIBE_MODEL`, `response_format=srt`
+  for subtitles (or `verbose_json` when segment detail is needed), `language` optional. Treat it as
+  untrusted-network: send the bearer token and set generous timeouts. Speaches loads the model on
+  demand and unloads it after an idle TTL, so the **first call after idle is slow** and it may return
+  **HTTP 429** while busy/loading — retry with backoff and surface "warming up"/"busy" to the user
+  rather than failing the job. Handle unreachable without hanging.
+- Speaches returns **standard** whisper SRT. The collection's ≤42-characters-per-line subtitle rule
+  is applied **here**, in this tab's SRT post-processing — not in Speaches.
 
 ### Two patterns for services
 
 **Job-queue services** (green-to-red, yt-bulk-dl): User submits a form → job created with UUID → redirect to status page → HTMX polls `/convert/{job_id}/fragment` every 3s. Polling stops automatically because the fragment omits the `hx-trigger` attribute once `job.status` is `done` or `error`. Jobs run in a `ThreadPoolExecutor`; individual downloads use a nested executor that acquires a global semaphore (`max_workers_global`) before starting.
 
 **Synchronous service** (edl-to-archive): No job queue. Upload → convert → stream XLSX response directly. Session state (exclusion rules, fps, etc.) is persisted as JSON files keyed by a UUID cookie.
+
+### Adding a new service
+
+- Package lives at `services/transcribe/transcribe/`, added to `[tool.uv.workspace].members`.
+- Reuse the job-queue scaffolding from `green-to-red` verbatim where possible: in-memory job
+  store, `ThreadPoolExecutor`, the `pipeline(cb)` → `job.on_event` callback pattern, and the
+  HTMX status fragment that returns **HTTP 286** when `job.status in ("done","error")` to stop
+  polling. (AGENTS.md elsewhere describes "omit hx-trigger"; the current code uses 286 — follow
+  the code.)
+- Its own `templates/transcribe/` and `templates/base.html` (Pico CSS + HTMX CDN), not shared.
+- The browser side stays dependency-light: a file input, a progress view, two download links.
 
 ### Pipeline → job runner callback pattern
 
@@ -96,9 +130,21 @@ green-to-red and yt-bulk-dl expose `settings.py` with `max_workers_per_job` and 
 
 Both job-queue services register a lifespan coroutine that deletes output directories older than 2 hours, running every 30 minutes. Uploaded files in edl-to-archive are deleted in a `try/finally` block immediately after conversion.
 
+`transcribe` must be aggressive about disk because uploads are large and the server storage is small (128 GB):
+
+- Delete the **original upload immediately** after audio extraction (`try/finally`).
+- Delete the extracted audio once the transcription call to Speaches has returned (success or
+  failure) — the audio is sent in the request body, so it's no longer needed afterwards.
+- Keep only the small transcript outputs, under the same periodic-cleanup lifespan coroutine the
+  other job-queue services use. Pick a TTL (the existing services use 30 min of inactivity).
+- Write working files under the data dir (`MEDIA_TOOLS_DATA` / `~/data`), not `/tmp`.
+
 ## Environment variables
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `ADMIN_PASSWORD` | `"admin"` | HTTP Basic Auth for `/admin/` |
 | `MEDIA_TOOLS_DATA` | `~/.media-tools` | Root dir for edl-to-archive session JSON files |
+| `TRANSCRIBE_SERVICE_URL` | _(unset)_ | Base URL of the Speaches service (OpenAI-style `/v1`)             |
+| `TRANSCRIBE_API_TOKEN`   | _(unset)_ | Bearer token / API key sent to Speaches                           |
+| `TRANSCRIBE_MODEL`       | _(unset)_ | Model id Speaches should load (e.g. a `large-v3-turbo` CT2 model) |
