@@ -18,9 +18,10 @@ import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable, cast
 
 import yt_dlp
+from yt_dlp.postprocessor.common import PostProcessor
 
 _rename_lock = threading.Lock()
 
@@ -45,7 +46,7 @@ def _unique_path(path: Path) -> Path:
     return path
 
 
-class EnsureH264PostProcessor(yt_dlp.postprocessor.PostProcessor):
+class EnsureH264PostProcessor(PostProcessor):
     """Re-encode to H264+AAC if the downloaded streams use different codecs."""
 
     def run(self, info: dict):
@@ -98,7 +99,7 @@ class EnsureH264PostProcessor(yt_dlp.postprocessor.PostProcessor):
         return video_codec, audio_codec
 
 
-class RenamePostProcessor(yt_dlp.postprocessor.PostProcessor):
+class RenamePostProcessor(PostProcessor):
     def __init__(self, prefix: str | None, max_len: int):
         super().__init__()
         self.prefix = prefix
@@ -108,7 +109,11 @@ class RenamePostProcessor(yt_dlp.postprocessor.PostProcessor):
         title = info.get("title", info.get("id", "unknown"))
         video_id = info.get("id", "unknown")
         clean_title = sanitize_title(title, self.max_len)
-        new_base = f"{self.prefix}_{clean_title}" if self.prefix else clean_title
+
+        if self.prefix:
+            new_base = f"{self.prefix}{clean_title}" if self.prefix.endswith('_') else f"{self.prefix}_{clean_title}"
+        else:
+            new_base = clean_title
 
         old_path = Path(info["filepath"])
         new_path = old_path.parent / f"{new_base}{old_path.suffix}"
@@ -149,7 +154,7 @@ def download_one(
                       "channel": idict.get("channel", idict.get("uploader", ""))})
             on_event({"type": "video_start", "url": url})
 
-    class DonePostProcessor(yt_dlp.postprocessor.PostProcessor):
+    class DonePostProcessor(PostProcessor):
         def __init__(self):
             super().__init__()
             self.metadata: dict | None = None
@@ -177,7 +182,7 @@ def download_one(
     try:
         ctx = global_semaphore if global_semaphore is not None else _NullContext()
         with ctx:
-            with yt_dlp.YoutubeDL(opts_with_hook) as ydl:
+            with yt_dlp.YoutubeDL(cast(Any, opts_with_hook)) as ydl:
                 ydl.add_post_processor(EnsureH264PostProcessor(), when="post_process")
                 ydl.add_post_processor(RenamePostProcessor(prefix, max_len), when="post_process")
                 ydl.add_post_processor(done_pp, when="post_process")
