@@ -8,7 +8,7 @@ This project is a prototype of software that will eventually run on a company-in
 
 The code is being tested on a Dell laptop without dedicated graphics card.
 
-The current production server is an LXC container running on a Proxmox server with 4GB of DDR3 memory and 128GB of mounted storage at `~/data`. A second dedicated LXC for transcription only is running on a second Proxmox with a dedicated GPU (a GTX 1650 with 4GB of VRAM).
+The current production server is an LXC container running on a Proxmox server with 4GB of DDR3 memory and 128GB of mounted storage at `~/data`. A second dedicated LXC on a second Proxmox host (with a GTX 1650, 4GB VRAM) runs a self-hosted, OpenAI-compatible **WhisperX-based transcription service** (built and maintained separately, in its own repo). This `media-tools-web` collection only ever *calls* that service over the network.
 
 ## Plan & Review
 
@@ -69,13 +69,17 @@ A `uv` workspace monorepo. The `gateway` service is the only entry point — it 
 
 The `transcribe` service follows the **job-queue pattern** (like `green-to-red` and
 `yt-bulk-dl`), with one important difference: it is a **thin client of an external,
-OpenAI-compatible transcription service ([Speaches](https://github.com/speaches-ai/speaches),
-deployed separately in its own GPU LXC)**, not a self-contained pipeline. Its pipeline does
-three things: extract audio from the upload with ffmpeg (then delete the original), call Speaches'
-`POST /v1/audio/transcriptions` endpoint, and relay its result/progress back into local `Job`
-events. No model runs inside this repo and there is no GPU dependency here. Because Speaches speaks
-the OpenAI audio API, the call can use the official `openai` Python client
-(`base_url=TRANSCRIBE_SERVICE_URL`, `api_key=TRANSCRIBE_API_TOKEN`) or a plain HTTP client.
+OpenAI-compatible transcription microservice that I build and run myself** (a WhisperX-based
+service in its own repo, deployed in its own GPU LXC) — not a self-contained pipeline. That
+service exposes OpenAI-compatible `/v1/audio/transcriptions` for basic transcription, **plus
+extensions** for word-level timestamps and speaker diarization (speaker-labelled SRT). This
+minimal tab uses only the basic-transcription path; the diarization extension is reserved for the
+richer tool we'll build later. The tab's pipeline does three things: extract audio from the upload
+with ffmpeg (then delete the original), call the service's `POST /v1/audio/transcriptions`
+endpoint, and relay its result/progress back into local `Job` events. No model runs inside this
+repo and there is no GPU dependency here. Because the service speaks the OpenAI audio API, the call
+can use the official `openai` Python client (`base_url=TRANSCRIBE_SERVICE_URL`,
+`api_key=TRANSCRIBE_API_TOKEN`) or a plain HTTP client.
 
 Mount it in `gateway/main.py` at `/transcribe` using the same `try/except ImportError`
 guard as the other services.
@@ -88,14 +92,16 @@ Remeber these general rules:
 - The browser UI is intentionally dependency-light and uses the standard library HTTP server plus static HTML/CSS/JS.
 - `transcribe` extracts audio as **16 kHz mono** (what Whisper expects) before sending it on;
   this also minimises the network payload. Probe input with ffprobe; never assume a format.
-- Call Speaches as an **OpenAI audio endpoint**: pass `model=TRANSCRIBE_MODEL`, `response_format=srt`
+- Call the transcription service as an **OpenAI audio endpoint**: pass `model=TRANSCRIBE_MODEL`, `response_format=srt`
   for subtitles (or `verbose_json` when segment detail is needed), `language` optional. Treat it as
-  untrusted-network: send the bearer token and set generous timeouts. Speaches loads the model on
-  demand and unloads it after an idle TTL, so the **first call after idle is slow** and it may return
-  **HTTP 429** while busy/loading — retry with backoff and surface "warming up"/"busy" to the user
-  rather than failing the job. Handle unreachable without hanging.
-- Speaches returns **standard** whisper SRT. The collection's ≤42-characters-per-line subtitle rule
-  is applied **here**, in this tab's SRT post-processing — not in Speaches.
+  untrusted-network: send the bearer token and set generous timeouts. The service loads models on
+  demand and unloads them after an idle timeout (to free VRAM for Ollama/Plex on the same card), so
+  the **first call after idle is slow** and it may return **HTTP 429** while busy/loading — retry
+  with backoff and surface "warming up"/"busy" to the user rather than failing the job. Handle
+  unreachable without hanging.
+- The service returns **standard** whisper SRT (and speaker-labelled SRT if diarization is ever
+  requested). The collection's ≤42-characters-per-line subtitle rule is applied **here**, in this
+  tab's SRT post-processing — not in the service.
 
 ### Two patterns for services
 
@@ -145,6 +151,6 @@ Both job-queue services register a lifespan coroutine that deletes output direct
 | --- | --- | --- |
 | `ADMIN_PASSWORD` | `"admin"` | HTTP Basic Auth for `/admin/` |
 | `MEDIA_TOOLS_DATA` | `~/.media-tools` | Root dir for edl-to-archive session JSON files |
-| `TRANSCRIBE_SERVICE_URL` | _(unset)_ | Base URL of the Speaches service (OpenAI-style `/v1`)             |
-| `TRANSCRIBE_API_TOKEN`   | _(unset)_ | Bearer token / API key sent to Speaches                           |
-| `TRANSCRIBE_MODEL`       | _(unset)_ | Model id Speaches should load (e.g. a `large-v3-turbo` CT2 model) |
+| `TRANSCRIBE_SERVICE_URL` | _(unset)_ | Base URL of the WhisperX transcription service (OpenAI-style `/v1`) |
+| `TRANSCRIBE_API_TOKEN`   | _(unset)_ | Bearer token / API key sent to the transcription service          |
+| `TRANSCRIBE_MODEL`       | _(unset)_ | Whisper model id the service should use (e.g. a `large-v3-turbo` CT2 model) |

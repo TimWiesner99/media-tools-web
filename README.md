@@ -70,9 +70,11 @@ Python script that batch-downloads YouTube videos in the highest available quali
 
 A minimal transcription tab. Upload a video or audio file and get back a transcript as
 plain text (`.txt`) or subtitles (`.srt`). The heavy lifting (running Whisper on a GPU) is
-done by a **separate, self-hosted transcription service — [Speaches](https://github.com/speaches-ai/speaches)**,
-which exposes an OpenAI-compatible audio API and runs in its own GPU LXC (alongside Ollama).
-This tab only handles the upload, the audio extraction, talking to that service, and showing progress.
+done by a **separate, self-hosted transcription service that I build myself** (a WhisperX-based
+microservice in its own repo), which exposes an OpenAI-compatible audio API and runs in its own
+GPU LXC. Beyond basic transcription it also supports speaker diarization and word-accurate
+timestamps, though this minimal tab only uses plain transcription. This tab handles the upload,
+the audio extraction, talking to that service, and showing progress.
 
 ### How it works
 
@@ -80,31 +82,33 @@ This tab only handles the upload, the audio extraction, talking to that service,
 2. The tab immediately transcodes it to a small Whisper-friendly audio file
    (16 kHz mono) with ffmpeg, and **deletes the original upload** to save space on the
    server (which has limited storage).
-3. The extracted audio is sent to Speaches, which exposes an **OpenAI-compatible** audio API
-   (the same `POST /v1/audio/transcriptions` endpoint and formats as OpenAI's own Whisper API),
-   authenticated with a shared bearer token.
+3. The extracted audio is sent to the transcription service, which exposes an **OpenAI-compatible**
+   audio API (the same `POST /v1/audio/transcriptions` endpoint and formats as OpenAI's own Whisper
+   API), authenticated with a shared bearer token.
 4. The tab runs that call inside a background job and shows live progress in the browser, following
    the same job-status pattern as `green-to-red` and `yt-bulk-dl`.
 5. When the job is done, you download the transcript as `.srt` or `.txt`.
 
-Speaches loads the model on demand and unloads it after an idle timeout to free VRAM, so the
-**first request after a quiet period is slower** (the model has to load) and the service may briefly
-return HTTP 429 while it's busy — the tab handles both gracefully rather than failing the job.
+The service loads models on demand and unloads them after an idle timeout to free VRAM (the GPU is
+shared with other services), so the **first request after a quiet period is slower** (the model has
+to load) and the service may briefly return HTTP 429 while it's busy — the tab handles both
+gracefully rather than failing the job.
 
 This tab does **not** run Whisper itself and has no GPU dependency — it can run on the same
-office-grade server as the rest of the collection. Speaches can run anywhere reachable on the
-network (currently a dedicated GPU LXC on a second Proxmox host; it could later be repointed at
-cloud Whisper or any other OpenAI-compatible server without changing this tab).
+office-grade server as the rest of the collection. The transcription service can run anywhere
+reachable on the network (currently a dedicated GPU LXC on a second Proxmox host; because it's
+OpenAI-compatible it could later be repointed at cloud Whisper or another compatible server without
+changing this tab).
 
 ### Configuration
 
 | Variable | Purpose |
 | --- | --- |
-| `TRANSCRIBE_SERVICE_URL` | Base URL of the Speaches service (OpenAI-style, e.g. ends in `/v1`) |
+| `TRANSCRIBE_SERVICE_URL` | Base URL of the transcription service (OpenAI-style, e.g. ends in `/v1`) |
 | `TRANSCRIBE_API_TOKEN` | Shared bearer token / API key sent with every request |
-| `TRANSCRIBE_MODEL` | Model id Speaches should use (e.g. a faster-whisper `large-v3-turbo` CTranslate2 model) |
+| `TRANSCRIBE_MODEL` | Whisper model id the service should use (e.g. a `large-v3-turbo` CTranslate2 model) |
 
-Because Speaches speaks the OpenAI audio API, this tab can talk to it with the official `openai`
+Because the service speaks the OpenAI audio API, this tab can talk to it with the official `openai`
 client (point `base_url` at `TRANSCRIBE_SERVICE_URL`) or a plain HTTP client — and it could be
 repointed at OpenAI's hosted Whisper or any other compatible server without code changes.
 
