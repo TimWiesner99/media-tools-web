@@ -26,3 +26,6 @@ Thumbs.db
 
 # Database files
 *.db
+
+# Examples
+services/edl-to-archive/examples/*

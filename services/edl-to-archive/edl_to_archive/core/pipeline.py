@@ -98,6 +98,7 @@ def run_conversion(
             source_path=source_path,
             def_list=def_list,
             output_path=output_path,
+            fps=fps,
             include_frames=include_frames,
         )
     except Exception as e:

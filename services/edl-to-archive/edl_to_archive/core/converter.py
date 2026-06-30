@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import pandas as pd
+import re
 from pathlib import Path
 from typing import Optional
+from xlsxwriter.utility import xl_col_to_name
 
 from .timecode import Timecode
 from .models import EDLEntry, SourceEntry, DefEntry
@@ -12,7 +14,7 @@ from .exclusion import ExclusionRuleSet, filter_edl_entries
 
 
 # Encodings to try when reading files
-ENCODINGS = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+ENCODINGS = ['utf-8', 'cp1252', 'latin-1', 'iso-8859-1']
 
 
 def read_file_with_encoding(filepath: Path) -> tuple[str, str]:
@@ -43,6 +45,49 @@ def read_file_with_encoding(filepath: Path) -> tuple[str, str]:
 
 # Supported text/CSV extensions (read via pd.read_csv)
 _TEXT_EXTENSIONS = {'.csv', '.tsv', '.txt'}
+
+_CANONICAL_EDL_COLUMNS = [
+    "id",
+    "reel",
+    "name",
+    "file_name",
+    "track",
+    "timecode_in",
+    "timecode_out",
+    "duration",
+    "source_start",
+    "source_end",
+    "audio_channels",
+    "comment",
+]
+
+_EDL_SHEET_COLUMNS = {
+    "id": "ID",
+    "reel": "Reel",
+    "name": "Name",
+    "file_name": "File Name",
+    "track": "Track",
+    "timecode_in": "Timecode In",
+    "timecode_out": "Timecode Out",
+    "duration": "Duration",
+    "source_start": "Source Start",
+    "source_end": "Source End",
+    "audio_channels": "Audio Channels",
+    "comment": "Comment",
+}
+
+_EDL_TEXT_REPLACEMENTS = {
+    '\x96': '–',
+    '‡': 'à',
+    'ñ': '–',
+}
+
+_CMX_EVENT_PATTERN = re.compile(
+    r'^\s*(\d{6})\s+(\S+)\s+(\S+)\s+(\S+)\s+'
+    r'(\d{2}:\d{2}:\d{2}:\d{2})\s+(\d{2}:\d{2}:\d{2}:\d{2})\s+'
+    r'(\d{2}:\d{2}:\d{2}:\d{2})\s+(\d{2}:\d{2}:\d{2}:\d{2})'
+)
+_CMX_CLIP_NAME_PATTERN = re.compile(r'^\*\s+FROM CLIP NAME:\s*(.+?)\s*$')
 
 
 def _detect_csv_delimiter(content: str) -> str:
@@ -86,6 +131,180 @@ def _find_header_line_in_text(
             best_idx = i
 
     return best_idx if best_count >= min_matches else 0
+
+
+def _blank_series(df: pd.DataFrame) -> pd.Series:
+    """Create a blank string series aligned to a DataFrame index."""
+    return pd.Series([""] * len(df), index=df.index, dtype=str)
+
+
+def _coalesce_columns(df: pd.DataFrame, columns: list[str]) -> pd.Series:
+    """Return the first non-empty value across multiple columns."""
+    result = _blank_series(df)
+
+    for column in columns:
+        if column not in df.columns:
+            continue
+        values = df[column].fillna("").astype(str).str.strip()
+        mask = result.eq("") & values.ne("")
+        result.loc[mask] = values.loc[mask]
+
+    return result
+
+
+def _extract_clip_name_from_comment(comment: str) -> str:
+    """Extract the clip name from a CMX comment line when present."""
+    match = _CMX_CLIP_NAME_PATTERN.match(comment.strip())
+    if not match:
+        return ""
+    return match.group(1).strip()
+
+
+def _looks_like_cmx_edl(content: str) -> bool:
+    """Check whether text content resembles a CMX-style EDL export."""
+    lines = [line.strip() for line in content.splitlines() if line.strip()]
+    if not lines:
+        return False
+
+    has_title = any(line.startswith("TITLE:") for line in lines[:5])
+    has_fcm = any(line.startswith("FCM:") for line in lines[:5])
+    has_events = any(_CMX_EVENT_PATTERN.match(line) for line in lines[:50])
+    return has_title and has_fcm and has_events
+
+
+def _timecode_duration(start_tc: str, end_tc: str, fps: int) -> str:
+    """Calculate a duration string from two timecodes."""
+    start = Timecode.from_string(start_tc, fps)
+    end = Timecode.from_string(end_tc, fps)
+    return (end - start).to_string()
+
+
+def _sanitize_edl_text(value: str) -> str:
+    """Clean up common placeholder and mojibake values in EDL text fields."""
+    sanitized = str(value).strip()
+    if sanitized.lower() in {'false', 'none', 'nan'}:
+        return ''
+
+    for original, replacement in _EDL_TEXT_REPLACEMENTS.items():
+        sanitized = sanitized.replace(original, replacement)
+
+    return sanitized
+
+
+def _finalize_canonical_edl_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Ensure a DataFrame contains the canonical EDL columns in order."""
+    canonical = df.copy().fillna("")
+
+    for column in _CANONICAL_EDL_COLUMNS:
+        if column not in canonical.columns:
+            canonical[column] = ""
+        canonical[column] = canonical[column].fillna("").astype(str).str.strip()
+
+    for column in ["reel", "name", "file_name", "track", "audio_channels", "comment"]:
+        canonical[column] = canonical[column].apply(_sanitize_edl_text)
+
+    blank_id_mask = canonical["id"].eq("")
+    if blank_id_mask.any():
+        canonical.loc[blank_id_mask, "id"] = [
+            str(index + 1)
+            for index in canonical.index[blank_id_mask]
+        ]
+
+    blank_file_name_mask = canonical["file_name"].eq("")
+    canonical.loc[blank_file_name_mask, "file_name"] = canonical.loc[blank_file_name_mask, "name"]
+
+    return canonical[_CANONICAL_EDL_COLUMNS]
+
+
+def _normalize_track_value(track: str) -> str:
+    """Normalize track labels to the CMX-style values used by raw EDL files."""
+    normalized = track.strip()
+    if normalized.upper() == "V1":
+        return "V"
+    return normalized
+
+
+def _normalize_comment_value(comment: str, name: str) -> str:
+    """Normalize comments to a single CMX-style clip-name line when possible."""
+    for line in str(comment).splitlines():
+        clip_name = _extract_clip_name_from_comment(line)
+        if clip_name:
+            return f"* FROM CLIP NAME: {clip_name}"
+
+    stripped_name = name.strip()
+    if stripped_name:
+        return f"* FROM CLIP NAME: {stripped_name}"
+
+    return str(comment).strip()
+
+
+def _normalize_named_edl_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep only usable EDL rows and resequence IDs consistently."""
+    normalized = df[df["name"].str.strip() != ""].copy().reset_index(drop=True)
+    normalized["id"] = [str(index) for index in range(1, len(normalized) + 1)]
+    normalized["track"] = normalized["track"].fillna("").astype(str).apply(_normalize_track_value)
+    normalized["comment"] = [
+        _normalize_comment_value(comment, name)
+        for comment, name in zip(normalized["comment"], normalized["name"])
+    ]
+    return normalized
+
+
+def _require_column_index(df: pd.DataFrame, column_name: str) -> int:
+    """Return a concrete integer column index for a unique column name."""
+    column_index = df.columns.get_loc(column_name)
+    if not isinstance(column_index, int):
+        raise ValueError(f"Expected a unique column named '{column_name}'.")
+    return column_index
+
+
+def _read_cmx_edl_dataframe(filepath: Path, fps: int) -> pd.DataFrame:
+    """Parse a CMX-style `.edl` file into the canonical EDL columns."""
+    content, _ = read_file_with_encoding(filepath)
+    if not _looks_like_cmx_edl(content):
+        raise ValueError("File does not look like a CMX EDL export.")
+
+    rows: list[dict[str, str]] = []
+    current_row: dict[str, str] | None = None
+
+    for raw_line in content.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("TITLE:") or line.startswith("FCM:") or line.startswith("M2"):
+            continue
+
+        clip_name = _extract_clip_name_from_comment(line)
+        if clip_name and current_row is not None:
+            current_row["name"] = clip_name
+            current_row["file_name"] = clip_name
+            current_row["comment"] = line
+            continue
+
+        event_match = _CMX_EVENT_PATTERN.match(line)
+        if not event_match:
+            continue
+
+        event_id, reel, track, _transition, source_in, source_out, program_in, program_out = event_match.groups()
+        current_row = {
+            "id": event_id,
+            "reel": reel,
+            "name": "",
+            "file_name": "",
+            "track": track,
+            "timecode_in": program_in,
+            "timecode_out": program_out,
+            "duration": _timecode_duration(program_in, program_out, fps),
+            "source_start": source_in,
+            "source_end": source_out,
+            "audio_channels": "",
+            "comment": "",
+        }
+        rows.append(current_row)
+
+    df = pd.DataFrame(rows, columns=_CANONICAL_EDL_COLUMNS)
+    df = _normalize_named_edl_rows(_finalize_canonical_edl_dataframe(df))
+    df.attrs['header_row_offset'] = 0
+    df.attrs['edl_format'] = 'cmx'
+    return df
 
 
 def _read_file_as_dataframe(
@@ -281,6 +500,20 @@ EDL_DUTCH_MAP = {
     "bron einde": "source_end",
 }
 
+EDL_EXPORT_COLUMN_MAP = {
+    "edit event": "id",
+    "source": "reel",
+    "track": "track",
+    "source tc in": "source_start",
+    "source tc out": "source_end",
+    "program tc in": "timecode_in",
+    "program tc out": "timecode_out",
+    "program duration": "duration",
+    "comments": "comment",
+    "source file": "file_name",
+    "from clip name": "name",
+}
+
 # Source list column mappings
 SOURCE_COLUMN_MAP = {
     # Dutch names (common in Dutch production)
@@ -354,23 +587,113 @@ def map_columns(df: pd.DataFrame, column_maps: list[dict[str, str]]) -> pd.DataF
     return df.rename(columns=rename_map)
 
 
+def _read_export_edl_dataframe(filepath: Path) -> pd.DataFrame:
+    """Read the export-style workbook variant into canonical EDL columns."""
+    suffix = filepath.suffix.lower()
+    engine = 'openpyxl' if suffix == '.xlsx' else 'odf'
+    workbook = pd.ExcelFile(filepath, engine=engine)
+    required_columns = {
+        "edit event",
+        "source tc in",
+        "source tc out",
+        "program tc in",
+        "program tc out",
+    }
+
+    candidate_sheets = []
+    if "EDL" in workbook.sheet_names:
+        candidate_sheets.append("EDL")
+    candidate_sheets.extend(
+        sheet_name for sheet_name in workbook.sheet_names
+        if sheet_name not in candidate_sheets
+    )
+
+    for sheet_name in candidate_sheets:
+        df = workbook.parse(sheet_name=sheet_name, dtype=str).fillna("")
+        normalized_columns = {
+            normalize_column_name(str(column))
+            for column in df.columns
+        }
+        if not required_columns.issubset(normalized_columns):
+            continue
+
+        mapped = map_columns(df, [EDL_EXPORT_COLUMN_MAP])
+        comment_names = _blank_series(mapped)
+        if "comment" in mapped.columns:
+            comment_names = mapped["comment"].fillna("").astype(str).apply(_extract_clip_name_from_comment)
+
+        mapped["name"] = _coalesce_columns(mapped, ["name", "file_name"])
+        mapped.loc[mapped["name"].eq(""), "name"] = comment_names[mapped["name"].eq("")]
+        mapped["file_name"] = _coalesce_columns(mapped, ["file_name", "name"])
+        mapped["audio_channels"] = _blank_series(mapped)
+
+        canonical = _normalize_named_edl_rows(_finalize_canonical_edl_dataframe(mapped))
+        canonical.attrs['header_row_offset'] = 0
+        canonical.attrs['edl_format'] = 'export_workbook'
+        canonical.attrs['sheet_name'] = sheet_name
+        return canonical
+
+    raise ValueError("Workbook does not contain a supported export-style EDL sheet.")
+
+
+def _read_tabular_edl_dataframe(filepath: Path) -> pd.DataFrame:
+    """Read the canonical tabular EDL variant into internal column names."""
+    known = _collect_known_column_names([EDL_COLUMN_MAP, EDL_DUTCH_MAP])
+    df = read_input_file(filepath, known_columns=known)
+    header_offset = int(df.attrs.get('header_row_offset', 0))
+    mapped = map_columns(df, [EDL_COLUMN_MAP, EDL_DUTCH_MAP])
+
+    required = {"name", "timecode_in", "timecode_out", "duration", "source_start", "source_end"}
+    if not required.issubset(set(mapped.columns)):
+        missing = ", ".join(sorted(required - set(mapped.columns)))
+        raise ValueError(f"Missing required EDL columns: {missing}")
+
+    canonical = _normalize_named_edl_rows(_finalize_canonical_edl_dataframe(mapped))
+    canonical.attrs['header_row_offset'] = header_offset
+    canonical.attrs['edl_format'] = 'tabular'
+    return canonical
+
+
+def read_normalized_edl_file(filepath: Path | str, fps: int = 25) -> pd.DataFrame:
+    """Read any supported EDL-side input and normalize it to the canonical EDL columns."""
+    filepath = Path(filepath)
+    suffix = filepath.suffix.lower()
+
+    if suffix == '.edl':
+        return _read_cmx_edl_dataframe(filepath, fps=fps)
+
+    if suffix in _TEXT_EXTENSIONS:
+        content, _ = read_file_with_encoding(filepath)
+        if _looks_like_cmx_edl(content):
+            return _read_cmx_edl_dataframe(filepath, fps=fps)
+
+    if suffix in {'.xlsx', '.ods'}:
+        try:
+            return _read_export_edl_dataframe(filepath)
+        except ValueError:
+            pass
+
+    return _read_tabular_edl_dataframe(filepath)
+
+
+def read_edl_sheet_dataframe(filepath: Path | str, fps: int = 25) -> pd.DataFrame:
+    """Build the normalized EDL worksheet that is written to the output workbook."""
+    df = read_normalized_edl_file(filepath, fps=fps)
+    return df.rename(columns=_EDL_SHEET_COLUMNS)
+
+
 def load_edl(filepath: Path | str, fps: int = 25) -> list[EDLEntry]:
-    """Load an EDL from a CSV or Excel file.
+    """Load an EDL-side input from any supported format.
 
     Args:
-        filepath: Path to the EDL file (.csv, .tsv, .xlsx, or .ods)
+        filepath: Path to the EDL file (.edl, .csv, .tsv, .xlsx, or .ods)
         fps: Frame rate for timecode parsing
 
     Returns:
         List of EDLEntry objects
     """
     filepath = Path(filepath)
-
-    known = _collect_known_column_names([EDL_COLUMN_MAP, EDL_DUTCH_MAP])
-    df = read_input_file(filepath, known_columns=known)
-
-    # Map columns
-    df = map_columns(df, [EDL_COLUMN_MAP, EDL_DUTCH_MAP])
+    df = read_normalized_edl_file(filepath, fps=fps)
 
     entries = []
     for _, row in df.iterrows():
@@ -413,7 +736,7 @@ def load_source(filepath: Path | str) -> list[SourceEntry]:
     df = map_columns(df, [SOURCE_COLUMN_MAP, SOURCE_ENGLISH_MAP])
 
     entries = []
-    for idx, row in df.iterrows():
+    for row_number, (_, row) in enumerate(df.iterrows(), start=2 + header_offset):
         row_dict = row.to_dict()
 
         # Skip rows without a name
@@ -423,8 +746,6 @@ def load_source(filepath: Path | str) -> list[SourceEntry]:
 
         # Row number for error messages (add 2: 1 for header, 1 for 0-indexing,
         # plus any preamble rows that were skipped)
-        row_number = idx + 2 + header_offset
-
         try:
             entry = SourceEntry.from_dict(row_dict, row_number=row_number)
             entries.append(entry)
@@ -454,8 +775,7 @@ def validate_edl_file(filepath: Path | str, fps: int = 25) -> list[str]:
     errors = []
 
     try:
-        known = _collect_known_column_names([EDL_COLUMN_MAP, EDL_DUTCH_MAP])
-        df = read_input_file(filepath, known_columns=known)
+        df = read_normalized_edl_file(filepath, fps=fps)
     except (UnicodeDecodeError, ValueError) as e:
         return [f"Could not read file: {e}"]
     except Exception as e:
@@ -464,8 +784,7 @@ def validate_edl_file(filepath: Path | str, fps: int = 25) -> list[str]:
     if df.empty:
         return ["File is empty or contains only headers."]
 
-    header_offset = df.attrs.get('header_row_offset', 0)
-    df = map_columns(df, [EDL_COLUMN_MAP, EDL_DUTCH_MAP])
+    header_offset = int(df.attrs.get('header_row_offset', 0))
 
     # Check required columns
     required = ["name", "timecode_in", "timecode_out", "duration", "source_start", "source_end"]
@@ -484,12 +803,12 @@ def validate_edl_file(filepath: Path | str, fps: int = 25) -> list[str]:
 
     # Validate timecodes on first few rows
     tc_cols = ["timecode_in", "timecode_out", "duration", "source_start", "source_end"]
-    for idx, row in data_rows.head(5).iterrows():
+    for row_number, (_, row) in enumerate(data_rows.head(5).iterrows(), start=2 + header_offset):
         for col in tc_cols:
             val = str(row.get(col, "")).strip()
             if val and val != "00:00:00:00":
                 if not Timecode.TIMECODE_PATTERN.match(val):
-                    errors.append(f"Row {idx + 2 + header_offset}, column '{col}': invalid timecode format '{val}' (expected HH:MM:SS:FF)")
+                    errors.append(f"Row {row_number}, column '{col}': invalid timecode format '{val}' (expected HH:MM:SS:FF)")
 
     return errors
 
@@ -860,6 +1179,7 @@ def save_excel_output(
     source_path: Path | str,
     def_list: list[DefEntry],
     output_path: Path | str,
+    fps: int = 25,
     include_frames: bool = False
 ) -> None:
     """Save all data to a single Excel file with three sheets.
@@ -878,10 +1198,9 @@ def save_excel_output(
     """
     output_path = Path(output_path)
 
-    # Read raw input files (with header detection to skip preamble)
-    edl_known = _collect_known_column_names([EDL_COLUMN_MAP, EDL_DUTCH_MAP])
+    # Read normalized/raw input files
     source_known = _collect_known_column_names([SOURCE_COLUMN_MAP, SOURCE_ENGLISH_MAP])
-    edl_raw = read_raw_input(edl_path, known_columns=edl_known)
+    edl_raw = read_edl_sheet_dataframe(edl_path, fps=fps)
     source_raw = read_raw_input(source_path, known_columns=source_known)
 
     # Build DEF DataFrame
@@ -946,19 +1265,20 @@ def save_excel_output(
 
         # Format Nummer/aantal column as text to prevent "2/4" being interpreted as a date/fraction
         if "Nummer/aantal" in def_df.columns:
-            nummer_col = def_df.columns.get_loc("Nummer/aantal")
+            nummer_col = _require_column_index(def_df, "Nummer/aantal")
             for row_num, value in enumerate(def_df["Nummer/aantal"], start=1):
                 if value and str(value).strip():
                     def_sheet.write_string(row_num, nummer_col, str(value), text_format)
 
         # Add Kosten sum to DEF sheet
         if "Kosten" in def_df.columns:
-            kosten_col = def_df.columns.get_loc("Kosten")
+            kosten_col = _require_column_index(def_df, "Kosten")
             data_rows = len(def_df)
             # Sum row: 3 rows below last data (row 0 is header, so last data is at row data_rows)
             sum_row = data_rows + 1 + 3  # +1 for header, +3 for empty rows
             # Excel formula uses 1-based row numbers; data starts at row 2
-            sum_formula = f"=SUM({chr(65 + kosten_col)}2:{chr(65 + kosten_col)}{data_rows + 1})"
+            kosten_col_name = xl_col_to_name(kosten_col)
+            sum_formula = f"=SUM({kosten_col_name}2:{kosten_col_name}{data_rows + 1})"
             # Add "Kosten totaal" label to the left of the sum cell
             def_sheet.write(sum_row, kosten_col - 1, "Kosten totaal", header_format)
             def_sheet.write_formula(sum_row, kosten_col, sum_formula, currency_header_format)
@@ -1040,6 +1360,7 @@ def convert(
         source_path=source_path,
         def_list=def_list,
         output_path=output_path,
+        fps=fps,
         include_frames=include_frames,
     )
     print(f"  Saved Excel file to {output_path}")
