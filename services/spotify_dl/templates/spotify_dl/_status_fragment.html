@@ -1,0 +1,138 @@
+{#
+  Step visual state — three steps, always rendered (greyed when pending).
+  Phases: pending → spotify → tracks → done/error
+  MB runs in parallel with the tracks phase (mb_status: pending → running → done).
+#}
+{% set s_spotify = "done"   if job.phase not in ("pending","spotify")
+                   else ("active" if job.phase == "spotify" else "pending") %}
+{% set s_tracks  = "done"   if job.phase == "done"
+                   else ("active" if job.phase == "tracks"  else "pending") %}
+{% set s_meta    = "done"   if job.mb_status == "done"
+                   else ("active" if job.mb_status == "running" else "pending") %}
+
+<div id="status-panel"
+  hx-get="{{ fragment_url }}"
+  hx-trigger="every 3s"
+  hx-swap="outerHTML"
+>
+
+{% if job.status not in ("done", "error") %}
+<p class="elapsed-time">Elapsed: {{ elapsed }}</p>
+{% endif %}
+
+{% if job.status == "error" %}
+  <div class="error-banner">
+    <strong>Conversion failed:</strong> {{ job.error or "An unknown error occurred." }}
+    <br/><a href="/spotify-dl/">Try again</a>
+  </div>
+{% endif %}
+
+<div class="pipeline-steps">
+
+  <div class="pipeline-step {{ s_spotify }}">
+    <div class="step-marker">
+      {% if s_spotify == "done" %}✓{% elif s_spotify == "active" %}⟳{% else %}○{% endif %}
+    </div>
+    <div class="step-body">
+      <h4>Fetch Spotify data</h4>
+      {% if job.content_name %}
+        <p class="step-detail">
+          <strong>{{ job.content_name }}</strong>
+          {% if job.track_states %}— {{ job.track_states | length }} track(s){% endif %}
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="pipeline-step {{ s_tracks }}">
+    <div class="step-marker">
+      {% if s_tracks == "done" %}✓{% elif s_tracks == "active" %}⟳{% else %}○{% endif %}
+    </div>
+    <div class="step-body">
+      <h4>Find &amp; download tracks</h4>
+      {% if job.track_states %}
+        {% set found_n = job.track_states | selectattr("yt_status","equalto","found") | list | length %}
+        {% set done_n  = job.track_states | selectattr("dl_status","equalto","done")  | list | length %}
+        <p class="step-detail">
+          {{ found_n }} / {{ job.track_states | length }} found on YouTube
+          {%- if found_n %} · {{ done_n }} / {{ found_n }} downloaded{% endif %}
+        </p>
+        <table class="track-table">
+          <thead>
+            <tr>
+              <th>Track</th>
+              <th title="Found on YouTube">YT</th>
+              <th title="Downloaded">DL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ts in job.track_states %}
+            <tr>
+              <td class="track-name-cell" title="{{ ts.display_name }}">
+                {{ ts.display_name | truncate(50, true, "…") }}
+              </td>
+              <td class="track-status-cell yt-{{ ts.yt_status }}">
+                {%- if ts.yt_status == "found" %}✓
+                {%- elif ts.yt_status == "not_found" %}✗
+                {%- else %}—{% endif %}
+              </td>
+              <td class="track-status-cell dl-{{ ts.dl_status }}">
+                {%- if ts.dl_status == "done" %}✓
+                {%- elif ts.dl_status == "error" %}✗
+                {%- elif ts.dl_status == "downloading" %}⟳
+                {%- else %}—{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="pipeline-step {{ s_meta }}">
+    <div class="step-marker">
+      {% if s_meta == "done" %}✓{% elif s_meta == "active" %}⟳{% else %}○{% endif %}
+    </div>
+    <div class="step-body">
+      <h4>Look up metadata</h4>
+      {% if s_meta == "active" %}
+        <p class="step-detail">Looking up composers, ISRCs and labels on MusicBrainz…</p>
+      {% elif s_meta == "done" %}
+        <p class="step-detail">Metadata CSV ready.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+{% if activity_log %}
+<details class="activity-log-details" {% if job.status not in ("done",) %}open{% endif %}>
+  <summary>Activity log ({{ activity_log | length }})</summary>
+  <div class="activity-log">
+    {% for ts, msg in activity_log | reverse %}
+    <div class="log-entry">
+      <span class="log-time">{{ ts | logtime }}</span>
+      <span class="log-msg">{{ msg }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</details>
+{% endif %}
+
+{% if job.status == "done" %}
+<div class="done-panel">
+  {% set not_found_n = job.result.not_found | length %}
+  <p>
+    <strong>{{ job.result.downloaded_count }}</strong> of
+    <strong>{{ job.result.track_count }}</strong> tracks downloaded.
+    {% if not_found_n %}
+      ({{ not_found_n }} not found on YouTube)
+    {% endif %}
+  </p>
+  <a href="{{ download_url }}" role="button">Download ZIP</a>
+  <a href="/spotify-dl/" role="button">Convert another</a>
+</div>
+{% endif %}
+
+</div>

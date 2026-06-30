@@ -14,13 +14,16 @@ resolution-markers = [
 members = [
     "edl-to-archive",
     "gateway",
-    "green-to-red",
     "media-tools-ui",
+    "spotify-dl",
     "yt-bulk-dl",
 ]
 
 [manifest.dependency-groups]
-dev = [{ name = "superclaude", specifier = ">=4.3.0" }]
+dev = [
+    { name = "httpx", specifier = ">=0.28" },
+    { name = "superclaude", specifier = ">=4.3.0" },
+]
 
 [[package]]
 name = "annotated-doc"
@@ -251,7 +254,7 @@ wheels = [
 [[package]]
 name = "edl-to-archive"
 version = "0.1.0"
-source = { editable = "services/edl-to-archive" }
+source = { editable = "services/edl_to_archive" }
 dependencies = [
     { name = "fastapi" },
     { name = "jinja2" },
@@ -267,7 +270,7 @@ dependencies = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "jinja2", specifier = ">=3.1" },
-    { name = "media-tools-ui", editable = "services/media-tools-ui" },
+    { name = "media-tools-ui", editable = "services/media_tools_ui" },
     { name = "odfpy", specifier = ">=1.4" },
     { name = "openpyxl", specifier = ">=3.1" },
     { name = "pandas", specifier = ">=2.0" },
@@ -360,12 +363,12 @@ dependencies = [
     { name = "bcrypt" },
     { name = "edl-to-archive" },
     { name = "fastapi" },
-    { name = "green-to-red" },
     { name = "itsdangerous" },
     { name = "jinja2" },
     { name = "media-tools-ui" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
+    { name = "spotify-dl" },
     { name = "sqlalchemy" },
     { name = "uvicorn", extra = ["standard"] },
     { name = "yt-bulk-dl" },
@@ -374,48 +377,17 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "bcrypt", specifier = ">=4.0" },
-    { name = "edl-to-archive", editable = "services/edl-to-archive" },
+    { name = "edl-to-archive", editable = "services/edl_to_archive" },
     { name = "fastapi", specifier = ">=0.115" },
-    { name = "green-to-red", editable = "services/green-to-red" },
     { name = "itsdangerous", specifier = ">=2.1" },
     { name = "jinja2", specifier = ">=3.1" },
-    { name = "media-tools-ui", editable = "services/media-tools-ui" },
+    { name = "media-tools-ui", editable = "services/media_tools_ui" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "python-multipart", specifier = ">=0.0.20" },
+    { name = "spotify-dl", editable = "services/spotify_dl" },
     { name = "sqlalchemy", specifier = ">=2.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
-    { name = "yt-bulk-dl", editable = "services/yt-bulk-dl" },
-]
-
-[[package]]
-name = "green-to-red"
-version = "0.1.0"
-source = { editable = "services/green-to-red" }
-dependencies = [
-    { name = "fastapi" },
-    { name = "ffmpeg-python" },
-    { name = "jinja2" },
-    { name = "media-tools-ui" },
-    { name = "musicbrainzngs" },
-    { name = "python-multipart" },
-    { name = "spotifyscraper" },
-    { name = "uvicorn", extra = ["standard"] },
-    { name = "youtube-search" },
-    { name = "yt-dlp" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "fastapi", specifier = ">=0.115" },
-    { name = "ffmpeg-python", specifier = ">=0.2.0" },
-    { name = "jinja2", specifier = ">=3.1" },
-    { name = "media-tools-ui", editable = "services/media-tools-ui" },
-    { name = "musicbrainzngs", specifier = ">=0.7.1" },
-    { name = "python-multipart", specifier = ">=0.0.20" },
-    { name = "spotifyscraper", specifier = ">=2.1.5" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
-    { name = "youtube-search", specifier = ">=2.2.0" },
-    { name = "yt-dlp", specifier = ">=2023.12.30" },
+    { name = "yt-bulk-dl", editable = "services/yt_bulk_dl" },
 ]
 
 [[package]]
@@ -459,6 +431,19 @@ wheels = [
 ]
 
 [[package]]
+name = "httpcore"
+version = "1.0.9"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "certifi" },
+    { name = "h11" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/06/94/82699a10bca87a5556c9c59b5963f2d039dbd239f25bc2a63907a05a14cb/httpcore-1.0.9.tar.gz", hash = "sha256:6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8", size = 85484, upload-time = "2025-04-24T22:06:22.219Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl", hash = "sha256:2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55", size = 78784, upload-time = "2025-04-24T22:06:20.566Z" },
+]
+
+[[package]]
 name = "httptools"
 version = "0.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -478,6 +463,21 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/4d/31/14df99e1c43bd132eec921c2e7e11cda7852f65619bc0fc5bdc2d0cb126c/httptools-0.7.1-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:f084813239e1eb403ddacd06a30de3d3e09a9b76e7894dcda2b22f8a726e9c60", size = 452631, upload-time = "2025-10-10T03:54:58.219Z" },
     { url = "https://files.pythonhosted.org/packages/22/d2/b7e131f7be8d854d48cb6d048113c30f9a46dca0c9a8b08fcb3fcd588cdc/httptools-0.7.1-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:7347714368fb2b335e9063bc2b96f2f87a9ceffcd9758ac295f8bbcd3ffbc0ca", size = 452910, upload-time = "2025-10-10T03:54:59.366Z" },
     { url = "https://files.pythonhosted.org/packages/53/cf/878f3b91e4e6e011eff6d1fa9ca39f7eb17d19c9d7971b04873734112f30/httptools-0.7.1-cp314-cp314-win_amd64.whl", hash = "sha256:cfabda2a5bb85aa2a904ce06d974a3f30fb36cc63d7feaddec05d2050acede96", size = 88205, upload-time = "2025-10-10T03:55:00.389Z" },
+]
+
+[[package]]
+name = "httpx"
+version = "0.28.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "certifi" },
+    { name = "httpcore" },
+    { name = "idna" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b1/df/48c586a5fe32a0f01324ee087459e112ebb7224f646c0b5023f5e79e9956/httpx-0.28.1.tar.gz", hash = "sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc", size = 141406, upload-time = "2024-12-06T15:37:23.222Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad", size = 73517, upload-time = "2024-12-06T15:37:21.509Z" },
 ]
 
 [[package]]
@@ -657,7 +657,7 @@ wheels = [
 [[package]]
 name = "media-tools-ui"
 version = "0.1.0"
-source = { editable = "services/media-tools-ui" }
+source = { editable = "services/media_tools_ui" }
 dependencies = [
     { name = "fastapi" },
     { name = "jinja2" },
@@ -1026,6 +1026,37 @@ wheels = [
 ]
 
 [[package]]
+name = "spotify-dl"
+version = "0.1.0"
+source = { editable = "services/spotify_dl" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "ffmpeg-python" },
+    { name = "jinja2" },
+    { name = "media-tools-ui" },
+    { name = "musicbrainzngs" },
+    { name = "python-multipart" },
+    { name = "spotifyscraper" },
+    { name = "uvicorn", extra = ["standard"] },
+    { name = "youtube-search" },
+    { name = "yt-dlp" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "ffmpeg-python", specifier = ">=0.2.0" },
+    { name = "jinja2", specifier = ">=3.1" },
+    { name = "media-tools-ui", editable = "services/media_tools_ui" },
+    { name = "musicbrainzngs", specifier = ">=0.7.1" },
+    { name = "python-multipart", specifier = ">=0.0.20" },
+    { name = "spotifyscraper", specifier = ">=2.1.5" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
+    { name = "youtube-search", specifier = ">=2.2.0" },
+    { name = "yt-dlp", specifier = ">=2023.12.30" },
+]
+
+[[package]]
 name = "spotifyscraper"
 version = "2.1.5"
 source = { registry = "https://pypi.org/simple" }
@@ -1336,7 +1367,7 @@ wheels = [
 [[package]]
 name = "yt-bulk-dl"
 version = "0.1.0"
-source = { editable = "services/yt-bulk-dl" }
+source = { editable = "services/yt_bulk_dl" }
 dependencies = [
     { name = "fastapi" },
     { name = "jinja2" },
@@ -1348,7 +1379,7 @@ dependencies = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "jinja2", specifier = ">=3.1" },
-    { name = "media-tools-ui", editable = "services/media-tools-ui" },
+    { name = "media-tools-ui", editable = "services/media_tools_ui" },
     { name = "yt-dlp", specifier = ">=2026.2.21" },
 ]
 

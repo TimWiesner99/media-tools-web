@@ -28,7 +28,7 @@ Replace the duplicated per-service `base.html` templates with one shared base la
 
 ### 1. Added a shared workspace package
 
-- Created `services/media-tools-ui` with a `media_tools_ui` package.
+- Created `services/media_tools_ui` with a `media_tools_ui` package.
 - Added `media_tools_ui.create_templates()` to centralize Jinja setup.
 - Added `media_tools_ui/templates/base.html` as the only shared site layout.
 
@@ -39,12 +39,12 @@ Replace the duplicated per-service `base.html` templates with one shared base la
 
 ### 3. Removed duplicated base templates
 
-- Deleted the old `base.html` files from `gateway`, `green-to-red`, `yt-bulk-dl`, and `edl-to-archive`.
+- Deleted the old `base.html` files from `gateway`, `spotify_dl`, `yt-bulk-dl`, and `edl-to-archive`.
 - Existing page templates still extend `base.html`, but that file now resolves from the shared UI package.
 
 ### 4. Updated app wiring
 
-- Added `media-tools-ui` as a workspace dependency for gateway and each mounted service.
+- Added `media_tools_ui` as a workspace dependency for gateway and each mounted service.
 - Switched all app-level Jinja initialization to `create_templates(local_templates_dir)`.
 
 ### 5. Updated documentation
@@ -54,5 +54,5 @@ Replace the duplicated per-service `base.html` templates with one shared base la
 
 ### 6. Moved shared static assets
 
-- Moved the global `style.css` and shared SVG logos into `services/media-tools-ui/media_tools_ui/static/`.
+- Moved the global `style.css` and shared SVG logos into `services/media_tools_ui/static/`.
 - Switched the gateway `/static` mount to `media_tools_ui.get_static_dir()` so all shared assets now come from the same package as the shared base template.

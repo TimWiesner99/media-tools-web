@@ -53,15 +53,15 @@ The key architectural decisions, already made (we'll discuss the *why* as we go)
 - **This tab is a thin client.** Its job: receive an upload, extract audio, call Speaches, relay
   progress, serve the result. No model, no GPU here. The service is on a separate machine on purpose
   — so it can be reused by other tools and later moved to the cloud without touching this tab.
-- **It follows the `green-to-red` job-queue pattern** — that service is our reference implementation
+- **It follows the `spotify_dl` job-queue pattern** — that service is our reference implementation
   for almost everything (in-memory job store, `ThreadPoolExecutor`, the `pipeline → cb(event)` →
   `job.on_event` callback pattern, the HTMX status fragment that returns **HTTP 286** to stop
   polling, the `templates/<service>/` + own `base.html` layout). We adapt it; we don't reinvent it.
 - **Mount at `/transcribe`** in `gateway/main.py` with the same `try/except ImportError` guard as the
   other sub-apps. The gateway's `AuthMiddleware` already protects all sub-apps and injects the
   `X-User-Id` header, so the tab is behind login automatically and reads the user from that header
-  (exactly like `green-to-red` does).
-- **The pipeline differs from green-to-red in one way:** instead of doing work locally, it (1)
+  (exactly like `spotify_dl` does).
+- **The pipeline differs from `spotify_dl` in one way:** instead of doing work locally, it (1)
   extracts audio from the upload with ffmpeg to **16 kHz mono** and **deletes the original
   immediately** (`try/finally`) to save disk, then (2) calls Speaches'
   `POST /v1/audio/transcriptions` (synchronously) from inside the job's worker thread, then (3)
@@ -87,7 +87,7 @@ The key architectural decisions, already made (we'll discuss the *why* as we go)
 
 Each lesson is one teachable step. Adapt the size and order to my pace.
 
-0. **Orientation & mental model.** I read `green-to-red` end to end and the new `README`/`AGENTS`
+0. **Orientation & mental model.** I read `spotify_dl` end to end and the new `README`/`AGENTS`
    sections. I explain back to you: the full request lifecycle (form → job → redirect → HTMX
    fragment polling → 286 → download), how sub-apps mount, how the auth header reaches the sub-app,
    and where files live. We sketch how `transcribe` differs.
@@ -99,7 +99,7 @@ Each lesson is one teachable step. Adapt the size and order to my pace.
 3. **Audio extraction + delete original.** The ffmpeg call (`-ac 1 -ar 16000`), the
    subprocess-vs-`ffmpeg-python` decision, the `try/finally` cleanup. Concept: why 16 kHz mono, and
    separation of concerns (why we extract here, not on the GPU box).
-4. **Job model + runner.** Adapt green-to-red's `Job` + `job_runner` (in-memory store,
+4. **Job model + runner.** Adapt `spotify_dl`'s `Job` + `job_runner` (in-memory store,
    `ThreadPoolExecutor`, create/launch/get, the `cb(event)` pattern). Concept: background work and
    thread-safe state.
 5. **Call the transcription service — the core lesson.** Build the client call (decide `openai` vs `httpx` together),

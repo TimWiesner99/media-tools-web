@@ -1,13 +1,14 @@
 [tool.uv.workspace]
 members = [
-    "services/media-tools-ui",
+    "services/media_tools_ui",
     "services/gateway",
-    "services/green-to-red",
-    "services/yt-bulk-dl",
-    "services/edl-to-archive",
+    "services/spotify_dl",
+    "services/yt_bulk_dl",
+    "services/edl_to_archive",
 ]
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28",
     "superclaude>=4.3.0",
 ]

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}spotify_dl{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <div class="panel-header">Spotify to MP3</div>
+  <div class="panel-body">
+
+    <p>Enter a Spotify playlist, album, or track URL to download the audio as MP3 files, along with a CSV of licensing metadata.</p>
+
+    {% if error %}
+    <div class="error-banner"><strong>Error:</strong> {{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="convert">
+      <label for="spotify_url">
+        Spotify URL
+        <input
+          type="url"
+          id="spotify_url"
+          name="spotify_url"
+          placeholder="https://open.spotify.com/playlist/…"
+          required
+          autofocus
+        />
+      </label>
+      <div class="form-actions">
+        <button type="submit">Start download</button>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

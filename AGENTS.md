@@ -55,7 +55,7 @@ The current production server is an LXC container running on a Proxmox server wi
 uv run --package gateway uvicorn gateway.main:app --reload
 
 # Run a specific service in isolation (example)
-uv run --package green-to-red uvicorn green_to_red.main:app --reload --port 8001
+uv run --package spotify_dl uvicorn spotify_dl.main:app --reload --port 8001
 
 # In production/on a remote server, run the webserver with
 uv run --package gateway uvicorn gateway.main:app --host 0.0.0.0 --port 8000
@@ -65,10 +65,10 @@ There are no tests or linting configured in this project.
 
 ## Architecture
 
-A `uv` workspace monorepo. The `gateway` service is the only entry point — it imports and mounts the other services as ASGI sub-apps at `/green-to-red`, `/yt-bulk-dl`, and `/edl-to-archive`, and so forth. Each sub-app mount is wrapped in `try/except ImportError` so the server starts even if a service package is missing.
+A `uv` workspace monorepo. The `gateway` service is the only entry point — it imports and mounts the other services as ASGI sub-apps at `/spotify-dl`, `/yt-bulk-dl`, and `/edl-to-archive`, and so forth. Each sub-app mount is wrapped in `try/except ImportError` so the server starts even if a service package is missing.
 
-The `transcribe` service follows the **job-queue pattern** (like `green-to-red` and
-`yt-bulk-dl`), with one important difference: it is a **thin client of an external,
+The `transcribe` service follows the **job-queue pattern** (like `spotify_dl` and
+`yt_bulk_dl`), with one important difference: it is a **thin client of an external,
 OpenAI-compatible transcription microservice that I build and run myself** (a WhisperX-based
 service in its own repo, deployed in its own GPU LXC) — not a self-contained pipeline. That
 service exposes OpenAI-compatible `/v1/audio/transcriptions` for basic transcription, **plus
@@ -105,20 +105,20 @@ Remeber these general rules:
 
 ### Two patterns for services
 
-**Job-queue services** (green-to-red, yt-bulk-dl): User submits a form → job created with UUID → redirect to status page → HTMX polls `/convert/{job_id}/fragment` every 3s. Polling stops automatically because the fragment omits the `hx-trigger` attribute once `job.status` is `done` or `error`. Jobs run in a `ThreadPoolExecutor`; individual downloads use a nested executor that acquires a global semaphore (`max_workers_global`) before starting.
+**Job-queue services** (spotify_dl, yt_bulk_dl): User submits a form → job created with UUID → redirect to status page → HTMX polls `/convert/{job_id}/fragment` every 3s. Polling stops automatically because the fragment omits the `hx-trigger` attribute once `job.status` is `done` or `error`. Jobs run in a `ThreadPoolExecutor`; individual downloads use a nested executor that acquires a global semaphore (`max_workers_global`) before starting.
 
 **Synchronous service** (edl-to-archive): No job queue. Upload → convert → stream XLSX response directly. Session state (exclusion rules, fps, etc.) is persisted as JSON files keyed by a UUID cookie.
 
 ### Adding a new service
 
 - Package lives at `services/transcribe/transcribe/`, added to `[tool.uv.workspace].members`.
-- Reuse the job-queue scaffolding from `green-to-red` verbatim where possible: in-memory job
+- Reuse the job-queue scaffolding from `spotify_dl` verbatim where possible: in-memory job
   store, `ThreadPoolExecutor`, the `pipeline(cb)` → `job.on_event` callback pattern, and the
   HTMX status fragment that returns **HTTP 286** when `job.status in ("done","error")` to stop
   polling. (AGENTS.md elsewhere describes "omit hx-trigger"; the current code uses 286 — follow
   the code.)
 - Its own `templates/transcribe/` content templates that extend the shared base layout from
-  `services/media-tools-ui/media_tools_ui/templates/base.html`.
+  `services/media_tools_ui/templates/base.html`.
 - The browser side stays dependency-light: a file input, a progress view, two download links.
 
 ### Pipeline → job runner callback pattern
@@ -127,11 +127,11 @@ Pipelines (`core/pipeline.py`) receive a `cb: Callable[[dict], None]` argument. 
 
 ### Template structure
 
-Each service keeps its own `templates/<service_name>/` content templates, and the gateway keeps its own page templates, but the shared site layout now lives in `services/media-tools-ui/media_tools_ui/templates/base.html`. Shared CSS and site-wide logos live in `services/media-tools-ui/media_tools_ui/static/`. Build Jinja environments through `media_tools_ui.create_templates(local_templates_dir)` so local templates resolve first and shared UI templates resolve second, and mount `/static` from `media_tools_ui.get_static_dir()` in the gateway. If you need to change the global header, footer, shared nav, CSS, or shared logos, update the files in `media-tools-ui` rather than reintroducing per-service copies. Starlette ≥1.0 `TemplateResponse` signature: `TemplateResponse(request, "name.html", context_dict)` — do **not** pass `{"request": request, ...}` as the context.
+Each service keeps its own `templates/<service_name>/` content templates, and the gateway keeps its own page templates, but the shared site layout now lives in `services/media_tools_ui/templates/base.html`. Shared CSS and site-wide logos live in `services/media_tools_ui/static/`. Build Jinja environments through `media_tools_ui.create_templates(local_templates_dir)` so local templates resolve first and shared UI templates resolve second, and mount `/static` from `media_tools_ui.get_static_dir()` in the gateway. If you need to change the global header, footer, shared nav, CSS, or shared logos, update the files in `media_tools_ui` rather than reintroducing per-service copies. Starlette ≥1.0 `TemplateResponse` signature: `TemplateResponse(request, "name.html", context_dict)` — do **not** pass `{"request": request, ...}` as the context.
 
 ### Runtime settings
 
-green-to-red and yt-bulk-dl expose `settings.py` with `max_workers_per_job` and `max_workers_global`. These are in-memory only and reset on restart. The admin panel at `/admin/` (HTTP Basic Auth, password via `ADMIN_PASSWORD` env var) can update them at runtime.
+spotify_dl and yt_bulk_dl expose `settings.py` with `max_workers_per_job` and `max_workers_global`. These are in-memory only and reset on restart. The admin panel at `/admin/` (HTTP Basic Auth, password via `ADMIN_PASSWORD` env var) can update them at runtime.
 
 ### Cleanup
 

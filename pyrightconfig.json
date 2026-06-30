@@ -1,0 +1,9 @@
+{
+  "include": [
+    "services",
+    "tests"
+  ],
+  "extraPaths": [
+    "services"
+  ]
+}

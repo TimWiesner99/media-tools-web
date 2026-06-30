@@ -8,7 +8,7 @@ The `find_source_match()` function in `converter.py` uses raw substring containm
 
 ### 1. Created `edl_to_archive/settings.py` (new file)
 
-Follows the same pattern as `yt_bulk_dl/settings.py` and `green_to_red/settings.py`:
+Follows the same pattern as `yt_bulk_dl/settings.py` and `spotify_dl/settings.py`:
 
 ```python
 @dataclass

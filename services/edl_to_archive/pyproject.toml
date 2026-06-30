@@ -1,0 +1,38 @@
+[project]
+name = "edl_to_archive"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "jinja2>=3.1",
+    "media_tools_ui",
+    "pandas>=2.0",
+    "openpyxl>=3.1",
+    "xlsxwriter>=3.2",
+    "odfpy>=1.4",
+    "python-multipart>=0.0.20",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+dev-mode-dirs = [".."]
+
+[tool.hatch.build.targets.wheel]
+only-include = [
+    "__init__.py",
+    "main.py",
+    "router.py",
+    "session_store.py",
+    "settings.py",
+    "core",
+    "templates",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"" = "edl_to_archive"
+
+[tool.uv.sources]
+media_tools_ui = { workspace = true }

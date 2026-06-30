@@ -5,13 +5,13 @@ A small collection of useful tools for media production, made during my internsh
 ## Shared UI layout
 
 The site-wide header and footer are now defined in one place:
-`services/media-tools-ui/media_tools_ui/templates/base.html`
+`services/media_tools_ui/templates/base.html`
 
 The global CSS and shared logos are also now defined in one place:
-`services/media-tools-ui/media_tools_ui/static/`
+`services/media_tools_ui/static/`
 
 Gateway pages and module pages still extend `base.html`, but each app now creates its Jinja environment through
-`services/media-tools-ui/media_tools_ui/templating.py`. Template lookup is ordered like this:
+`services/media_tools_ui/templating.py`. Template lookup is ordered like this:
 
 1. The app's own local templates directory
 2. The shared UI templates directory
@@ -23,7 +23,7 @@ On a remote server, run he webserver with
 uv run --package gateway uvicorn gateway.main:app --host 0.0.0.0 --port 8000
 ```
 
-## edl-to-archive
+## EDL to Archive
 Simple script to convert EDL and archive source lists to complete archive lists with timecodes and source links.
 
 ### Exclusion Rules
@@ -56,7 +56,7 @@ Lines are OR'd together: if ANY line matches, the entry is excluded.
 | `comment` | `Comment`, `COMMENT` | Entry comment |
 
 
-## green-to-red music
+## Spotify to MP3
 Simple tool that converts a Spotify playlist into downloaded MP3 files. Give it a Spotify playlist URL and it will find each track on YouTube, download them as MP3s, and rename them to the standard "Artist - Title" format.
 
 Also generates a detailed CSV file with licensing metadata (composers, labels, ISRCs) sourced from MusicBrainz.
@@ -73,7 +73,7 @@ Built on [SysGarcia's Playlist-converter](https://github.com/SysGarcia/Playlist-
 
 **No API credentials needed** — the tool uses web scraping for Spotify playlists, `youtube-search` for YouTube lookups, and `yt-dlp` for downloads.
 
-## yt-bulk-dl
+## YouTube bulk download
 Python script that batch-downloads YouTube videos in the highest available quality. Reads URLs from a text file, merges the best video + audio streams, downloads multiple videos in parallel, and optionally fetches manually-added subtitles as `.srt` sidecar files.
 
 `metadata.csv` contains one row per URL from `download-list.txt` (in input order), with columns: `filename`, `youtube_title`, `channel`, `upload_date`, `youtube_url`. The order of rows always matches the order of URLs in `download-list.txt` regardless of which download finishes first.
@@ -82,7 +82,7 @@ Python script that batch-downloads YouTube videos in the highest available quali
 - Auto-generated subtitles are excluded; only manually-added subs are downloaded.
 - Playlist links download only the single linked video (set `noplaylist: False` in the script to change this).
 
-## transcribe
+## Transcribe
 
 A minimal transcription tab. Upload a video or audio file and get back a transcript as
 plain text (`.txt`) or subtitles (`.srt`). The heavy lifting (running Whisper on a GPU) is
@@ -102,7 +102,7 @@ the audio extraction, talking to that service, and showing progress.
    audio API (the same `POST /v1/audio/transcriptions` endpoint and formats as OpenAI's own Whisper
    API), authenticated with a shared bearer token.
 4. The tab runs that call inside a background job and shows live progress in the browser, following
-   the same job-status pattern as `green-to-red` and `yt-bulk-dl`.
+   the same job-status pattern as `spotify_dl` and `yt_bulk_dl`.
 5. When the job is done, you download the transcript as `.srt` or `.txt`.
 
 The service loads models on demand and unloads them after an idle timeout to free VRAM (the GPU is
