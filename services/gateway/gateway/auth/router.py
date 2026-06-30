@@ -6,14 +6,14 @@ from pathlib import Path
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
+from media_tools_ui import create_templates
 
 from gateway.auth.crypto import hash_password, verify_password
 from gateway.auth.db import User, get_db
 from gateway.auth.session import clear_session, get_current_user, set_session_user
 
 BASE_DIR = Path(__file__).parent.parent
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+templates = create_templates(BASE_DIR / "templates")
 
 router = APIRouter()
 

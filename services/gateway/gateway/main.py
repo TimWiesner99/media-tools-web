@@ -11,8 +11,8 @@ load_dotenv()
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from media_tools_ui import create_templates, get_static_dir
 
 from gateway.admin import router as admin_router
 from gateway.auth.middleware import AuthMiddleware
@@ -65,8 +65,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Media Tools", lifespan=lifespan)
 
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+app.mount("/static", StaticFiles(directory=get_static_dir()), name="static")
+templates = create_templates(BASE_DIR / "templates")
 
 # Middleware — add_middleware is LIFO (last added = outermost wrapper).
 # AuthMiddleware added first → inner → request.session already populated when it runs.

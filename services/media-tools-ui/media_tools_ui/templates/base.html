@@ -20,10 +20,10 @@
         <a href="/green-to-red/" role="button">Spotify to MP3</a>
         <a href="/edl-to-archive/" role="button">EDL to Archive</a>
         <a href="/yt-bulk-dl/" role="button">YT Bulk DL</a>
-        {% if user is defined and user and user.role == "admin" %}
+        {% if layout.is_admin %}
         <a href="/admin/" role="button">Admin</a>
         {% endif %}
-        {% if user is defined and user %}
+        {% if layout.is_authenticated %}
         <a href="/account" role="button">Settings</a>
         <form method="post" action="/logout" class="form-inline">
           <button type="submit">Sign Out</button>
@@ -40,7 +40,7 @@
 
   <footer class="page-container">
     <img src="/static/medialab-logo-2025.svg" alt="Medialab" class="footer-logo" />
-    <small>Media Tools — self-hosted collection</small>
+    <small>Werkt iets niet? Feedback of verzoekje? Stuur graag een mailtje naar <a href="mailto:t.wiesner@vpro.nl">t.wiesner@vpro.nl</a></small>
   </footer>
 
 </body>

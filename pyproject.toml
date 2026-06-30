@@ -1,5 +1,6 @@
 [tool.uv.workspace]
 members = [
+    "services/media-tools-ui",
     "services/gateway",
     "services/green-to-red",
     "services/yt-bulk-dl",

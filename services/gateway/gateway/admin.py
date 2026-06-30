@@ -8,10 +8,10 @@ which is set by AuthMiddleware for every authenticated request.
 from pathlib import Path
 
 from fastapi import APIRouter, Form, HTTPException, Request
-from fastapi.templating import Jinja2Templates
+from media_tools_ui import create_templates
 
 BASE_DIR = Path(__file__).parent
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+templates = create_templates(BASE_DIR / "templates")
 
 router = APIRouter(prefix="/admin")
 

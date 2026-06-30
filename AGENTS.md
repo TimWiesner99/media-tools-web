@@ -117,7 +117,8 @@ Remeber these general rules:
   HTMX status fragment that returns **HTTP 286** when `job.status in ("done","error")` to stop
   polling. (AGENTS.md elsewhere describes "omit hx-trigger"; the current code uses 286 — follow
   the code.)
-- Its own `templates/transcribe/` and `templates/base.html` (Pico CSS + HTMX CDN), not shared.
+- Its own `templates/transcribe/` content templates that extend the shared base layout from
+  `services/media-tools-ui/media_tools_ui/templates/base.html`.
 - The browser side stays dependency-light: a file input, a progress view, two download links.
 
 ### Pipeline → job runner callback pattern
@@ -126,7 +127,7 @@ Pipelines (`core/pipeline.py`) receive a `cb: Callable[[dict], None]` argument. 
 
 ### Template structure
 
-Each service has its own `templates/<service_name>/` directory and its own `base.html` with identical nav and CDN links (Pico CSS + HTMX). They are not shared. The gateway has its own separate `base.html`. Starlette ≥1.0 `TemplateResponse` signature: `TemplateResponse(request, "name.html", context_dict)` — do **not** pass `{"request": request, ...}` as the context.
+Each service keeps its own `templates/<service_name>/` content templates, and the gateway keeps its own page templates, but the shared site layout now lives in `services/media-tools-ui/media_tools_ui/templates/base.html`. Shared CSS and site-wide logos live in `services/media-tools-ui/media_tools_ui/static/`. Build Jinja environments through `media_tools_ui.create_templates(local_templates_dir)` so local templates resolve first and shared UI templates resolve second, and mount `/static` from `media_tools_ui.get_static_dir()` in the gateway. If you need to change the global header, footer, shared nav, CSS, or shared logos, update the files in `media-tools-ui` rather than reintroducing per-service copies. Starlette ≥1.0 `TemplateResponse` signature: `TemplateResponse(request, "name.html", context_dict)` — do **not** pass `{"request": request, ...}` as the context.
 
 ### Runtime settings
 

@@ -2,6 +2,22 @@
 
 A small collection of useful tools for media production, made during my internship at the VPRO.
 
+## Shared UI layout
+
+The site-wide header and footer are now defined in one place:
+`services/media-tools-ui/media_tools_ui/templates/base.html`
+
+The global CSS and shared logos are also now defined in one place:
+`services/media-tools-ui/media_tools_ui/static/`
+
+Gateway pages and module pages still extend `base.html`, but each app now creates its Jinja environment through
+`services/media-tools-ui/media_tools_ui/templating.py`. Template lookup is ordered like this:
+
+1. The app's own local templates directory
+2. The shared UI templates directory
+
+That keeps page-specific templates inside each service while making global header, footer, navigation, CSS, and shared logo changes a one-file edit.
+
 On a remote server, run he webserver with
 ```
 uv run --package gateway uvicorn gateway.main:app --host 0.0.0.0 --port 8000

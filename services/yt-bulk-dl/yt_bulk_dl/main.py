@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.templating import Jinja2Templates
+from media_tools_ui import create_templates
 
 from yt_bulk_dl.job_runner import cleanup_old_jobs
 from yt_bulk_dl.router import router
@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     app = FastAPI(title="YT Bulk Download", lifespan=lifespan)
-    templates = Jinja2Templates(directory=BASE_DIR / "templates")
+    templates = create_templates(BASE_DIR / "templates")
     app.state.templates = templates
     app.include_router(router)
     return app
